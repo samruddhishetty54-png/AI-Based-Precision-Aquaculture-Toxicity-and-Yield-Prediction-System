@@ -1,0 +1,8 @@
+year,total_observations,tan_nh3_n_populated,tan_nh3_populated,unverified_nh3_populated,overlap_both_tan_populated,emerson_source_tan_n_mw,emerson_source_tan_nh3_direct,raw_tan_n_ge_1_0_mg_l,raw_tan_nh3_ge_1_0_mg_l,raw_tan_nh3_ge_1_216_mg_l_mw_equiv,primary_calculated_nh3_ge_0_05_mg_l,existing_risk_heuristic_positives
+2021,309,309,0,0,0,309,0,2,0,0,7,7
+2022,1431,1431,0,0,0,1431,0,18,0,0,169,170
+2023,1082,1082,0,0,0,1082,0,3,0,0,95,95
+2024,1523,1523,0,0,0,1523,0,11,0,0,199,200
+2025,1563,942,622,623,1,942,621,9,14,0,43,44
+2026,1037,0,1037,1037,0,0,1037,0,17,1,55,55
+All Years (2021-2026),6945,5287,1659,1660,1,5287,1658,43,31,1,568,571

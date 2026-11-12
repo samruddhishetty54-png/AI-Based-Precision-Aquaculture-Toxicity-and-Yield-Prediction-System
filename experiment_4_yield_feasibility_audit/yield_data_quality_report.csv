@@ -1,0 +1,13 @@
+variable_name,source_dataset,unit,total_records,missing_count,missing_pct,unique_values_count,data_type,min_value,p25_value,median_value,mean_value,p75_value,max_value,zero_count,negative_count,data_quality_assessment
+Weight,water_quality.csv,grams,12431,6862,55.2,106,float64,0.0,250.0,500.0,548.84,800.0,2000.0,1,0,1 record with Weight=0g; 144 revisit pairs show apparent weight loss (partial harvest/species sampling noise). Rounded to 25/50/100g bins.
+Feed amount (kg),water_quality.csv,kg,12431,5675,45.65,168,float64,0.0,100.0,350.0,565.3,900.0,3300.0,1,0,1 record with 0kg; 5 records >= 3000kg (likely monthly or bulk feed delivery rather than single daily ration).
+Stocking density (per acre),water_quality.csv,count/acre,12431,2651,21.33,564,float64,0.0,2285.0,2791.0,8654.24,5059.0,235294.0,5,0,"5 records with 0 count/acre; 10 records with 200,000 to 235,294 (nursery/fry ponds rather than grow-out carp ponds)."
+Dead fish,water_quality.csv,count,12431,3908,31.44,36,float64,0.0,0.0,0.0,2.03,0.0,2717.0,8429,0,"Zero dead fish reported in 7,654 visits (89.8%); 1 outlier event with 2,717 dead fish (acute catastrophic mortality event)."
+DO (mg/L),water_quality.csv,mg/L,12431,19,0.15,196,float64,0.0,3.5,4.7,6.64,10.1,27.1,1,0,Extreme hypoxia (< 1.0 mg/L) in 364 records; supersaturation (> 15 mg/L) in 158 afternoon records.
+pH,water_quality.csv,pH scale,12431,19,0.15,229,float64,5.52,8.06,8.25,8.22,8.4,9.54,0,0,Alkaline spikes (> 9.0) in 73 records; acid stress (< 6.5) in 48 records.
+Temp (in °C),water_quality.csv,°C,12431,21,0.17,144,float64,21.4,27.8,29.8,29.5,31.2,37.8,0,0,Range 17.5°C to 38.6°C; biologically plausible for tropical aquaculture in Andhra Pradesh.
+Species,water_quality.csv,categorical text,12431,3781,30.42,19,object,,,,,,,0,0,"Predominantly multi-species polyculture (Catla + Rohu = 63.3%, Rohu + Catla = 27.3%, Roopchand = 2.2%). 3,781 missing values (30.4%). Species ratios not recorded."
+Pond area in acres,enrolled_ponds_v2.csv,acres,324,47,14.51,228,float64,0.13,3.44,9.07,14.26,21.5,54.0,0,0,47 ponds (14.5%) missing area in enrolled profile; mean 14.26 acres (range 0.13 to 54.0 acres). Highly skewed commercial pond size distribution.
+Stocking date,[ABSENT],date,0,12431,100.0,0,None,,,,,,,0,0,FATAL DEFICIENCY: 100% missing. Ponds enrolled midway through culture cycle (74.8% first observed with weight > 100g). Days of Culture (DOC) cannot be determined.
+Harvested biomass (kg),[ABSENT],kg,0,12431,100.0,0,None,,,,,,,0,0,FATAL DEFICIENCY: 100% missing. Actual final harvested biomass was never collected by farm observers.
+Harvest yield (kg/acre),[ABSENT],kg/acre,0,12431,100.0,0,None,,,,,,,0,0,FATAL DEFICIENCY: 100% missing. End-of-cycle agricultural yield ground truth does not exist.

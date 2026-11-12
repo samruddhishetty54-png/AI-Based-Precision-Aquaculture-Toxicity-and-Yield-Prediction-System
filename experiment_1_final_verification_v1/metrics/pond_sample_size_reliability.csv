@@ -1,0 +1,3 @@
+cohort,n_ponds,pct_of_ponds,total_observations,mean_visits_per_pond,mae_mean,mae_std,mae_median,mae_iqr,mae_min,mae_max,rmse_mean,bias_mean,welch_t_stat,welch_p_value,mann_whitney_u_stat,mann_whitney_p_value
+Fewer than 5 visits (< 5),47,14.83,120,2.55,0.020811,0.017601,0.017795,0.02175,0.000135,0.080396,0.024834,0.003062,2.5004,0.015709,7364.0,0.079031
+At least 5 visits (>= 5),270,85.17,6825,25.28,0.014246,0.009045,0.012606,0.010152,0.002578,0.062659,0.022359,0.000286,2.5004,0.015709,7364.0,0.079031

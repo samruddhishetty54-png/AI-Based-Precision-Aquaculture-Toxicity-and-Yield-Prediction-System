@@ -1,0 +1,3 @@
+partition_name,total_pairs,unique_ponds,mean_pairs_per_pond,median_pairs_per_pond,min_pairs_per_pond,p25_pairs_per_pond,p75_pairs_per_pond,max_pairs_per_pond,chained_adjacent_transitions_count,chained_transitions_pct,clustering_implication
+All-Pairs Chronological Test Set,1689,163,10.36,9.0,1,4.0,16.5,29,1281,83.94,"High intra-cluster correlation. Observations from the same pond share baseline genetics, management, and serial Markovian transition states."
+Clean Chronological Test Set (Retrospective),1601,163,9.82,8.0,1,3.5,15.0,27,1139,79.21,"Clustered dependency remains identical (163 ponds). Standard paired tests treating 1,601 pairs as i.i.d. inflate degrees of freedom tenfold."

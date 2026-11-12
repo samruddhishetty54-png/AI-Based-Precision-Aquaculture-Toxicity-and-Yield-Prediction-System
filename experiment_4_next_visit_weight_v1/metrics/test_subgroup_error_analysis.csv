@@ -1,0 +1,8 @@
+grouping_category,subgroup_name,sample_count,sample_pct,persistence_mae_g,random_forest_mae_g,delta_mae_g,pct_improvement_vs_persistence,rf_better_than_persistence
+Current Weight Range,< 300g (Juvenile),629,39.29,47.19,57.8,10.61,-22.48,False
+Current Weight Range,300-600g (Grow-out),377,23.55,84.62,64.4,-20.22,23.89,True
+Current Weight Range,600-1000g (Advanced),447,27.92,76.42,60.52,-15.91,20.81,True
+Current Weight Range,> 1000g (Market),148,9.24,61.28,98.48,37.19,-60.69,False
+Revisit Interval,3-14 days (Short),371,23.17,26.61,48.88,22.27,-83.72,False
+Revisit Interval,15-28 days (Standard),701,43.79,64.28,66.69,2.41,-3.75,False
+Revisit Interval,29-45 days (Extended),529,33.04,94.29,70.65,-23.64,25.08,True

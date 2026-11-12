@@ -1,0 +1,42 @@
+feature,importance
+curr_nh3,0.16888227175880552
+curr_tds,0.12524905907076475
+curr_ph,0.12407564017249965
+region_Nellore,0.10640615924474243
+region_Eluru,0.0977599056093949
+curr_temp,0.07707206985466569
+gap_days,0.07516779900533968
+curr_turbidity,0.0618978812343572
+curr_do,0.05111623384341695
+curr_weather_nan,0.016441854699957785
+curr_color_Light brown,0.01415415643015367
+curr_weather_Foggy,0.010440354827544084
+tds_is_missing,0.009059797081380237
+curr_color_Light green,0.008842340889167034
+curr_color_Dark green,0.008208095829653825
+curr_weather_Sunny,0.00797459420205194
+curr_color_Saturated green,0.005619553845848625
+turbidity_is_missing,0.005359018606552512
+curr_color_nan,0.005241376162550766
+"curr_weather_Sunny, Cloud cover 75%",0.0037645352279653175
+"curr_weather_Sunny, Cloud cover 25%",0.003274627997327106
+"curr_weather_Sunny, Foggy",0.002699519019004659
+curr_weather_Cloud cover 75%,0.002572855794752839
+curr_color_Transparent,0.00204665827568565
+"curr_weather_Sunny, Cloud cover 50%",0.0019285846517048618
+curr_weather_Cloud cover 25%,0.0019269017905828008
+curr_weather_Cloud cover 100%,0.0015579527110270873
+curr_weather_Cloud cover 50%,0.0009798823526552857
+curr_color_Dark brown,0.00027041351356829624
+"curr_weather_Foggy, Sunny",9.906296878926825e-06
+"curr_weather_Sunny, Cloud cover 100%",0.0
+"curr_weather_Cloud cover 25%, Cloud cover 50%",0.0
+"curr_weather_Cloud cover 50%, Foggy",0.0
+"curr_weather_Cloud cover 100%, Rainy",0.0
+"curr_weather_Rainy, Foggy",0.0
+curr_weather_Rainy,0.0
+"curr_weather_Foggy, Sunny, Cloud cover 50%",0.0
+"curr_weather_Cloud cover 75%, Rainy",0.0
+"curr_weather_Cloud cover 100%, Foggy",0.0
+"curr_weather_Sunny, Cloud cover 75%, Foggy",0.0
+"curr_weather_Sunny, Cloud cover 25%, Foggy",0.0

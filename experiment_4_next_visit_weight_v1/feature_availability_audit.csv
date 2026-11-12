@@ -1,0 +1,27 @@
+feature_name,timing,type,missing_pct,status,leakage_risk,rationale
+curr_weight,Visit t,Continuous (grams),0.0,SELECTED,NONE,Mandatory initial biological state variable; anchors the somatic growth curve.
+gap_days,Known at visit t,Continuous (days),0.0,SELECTED,NONE,Elapsed duration (3-45 days) over which biomass accumulation occurs.
+curr_feed_amount_kg,Visit t,Continuous (kg),0.36,SELECTED,NONE,Daily supplementary feed applied at visit t; primary somatic energy driver.
+curr_feed_per_acre_kg,Visit t,Continuous (kg/acre),0.88,SELECTED,NONE,Nutritional density normalized by pond water surface area.
+stocking_density_per_acre,Profile / Visit t,Continuous (count/acre),0.24,SELECTED,NONE,Biological crowding covariate governing competition and carrying capacity.
+pond_area_acres,Pond Profile,Continuous (acres),0.52,SELECTED,NONE,Total water surface area governing pond ecosystem scale.
+depth_meters,Pond Profile,Continuous (m),0.0,SELECTED,NONE,Operating water column depth modulating thermal stability and benthic stratification.
+curr_do_mg_l,Visit t,Continuous (mg/L),0.0,SELECTED,NONE,Morning nadir dissolved oxygen driving metabolic assimilation and feed conversion.
+curr_ph,Visit t,Continuous (pH),0.0,SELECTED,NONE,Water pH reflecting carbonate buffer and physiological stress.
+curr_temp_c,Visit t,Continuous (C),0.0,SELECTED,NONE,Water temperature directly governing ectothermic metabolic kinetics.
+dead_fish_count,Visit t,Continuous (count),0.0,SELECTED,NONE,Acute mortality indicator at visit t reflecting health crisis.
+air_gulping_count,Visit t,Continuous (count),0.0,SELECTED,NONE,Hypoxic behavioral distress indicator at visit t.
+tail_splashing_count,Visit t,Continuous (count),0.0,SELECTED,NONE,Agitation and parasitic/water stress indicator at visit t.
+feed_is_missing,Visit t,Binary flag,0.0,SELECTED,NONE,Missingness indicator preserving pattern of missing feed records.
+area_is_missing,Pond Profile,Binary flag,0.0,SELECTED,NONE,Missingness indicator for unrecorded pond acreage.
+density_is_missing,Profile / Visit t,Binary flag,0.0,SELECTED,NONE,Missingness indicator for unrecorded stocking density.
+species,Pond Profile,Categorical,0.0,SELECTED,NONE,"Cultured species mix (Catla, Rohu, Roopchand polyculture)."
+weather,Visit t,Categorical,0.0,SELECTED,NONE,"Meteorological condition (Sunny, Cloudy, Rainy, Foggy)."
+region,Metadata,Categorical,0.0,SELECTED,NONE,Farming district baseline (Eluru vs Nellore).
+feed_type,Pond Profile,Categorical,0.0,SELECTED,NONE,"Physical feed type (floating pelleted feed, mash, etc.)."
+next_weight,Visit t+1,Continuous (grams),0.0,TARGET (EXCLUDED FROM FEATURES),TARGET VARIABLE,Future average fish weight to be predicted; strictly excluded from feature matrix.
+weight_change_g,Derived t+1,Continuous (grams),0.0,EXCLUDED (FUTURE TARGET DERIVATIVE),DIRECT TARGET LEAKAGE,Target derivative (next_weight - curr_weight); barred from features.
+average_daily_gain_g,Derived t+1,Continuous (g/day),0.0,EXCLUDED (FUTURE TARGET DERIVATIVE),DIRECT TARGET LEAKAGE,Target derivative; barred from features.
+next_datetime,Visit t+1,Timestamp,0.0,EXCLUDED (FUTURE METADATA),FUTURE LEAKAGE,Future visit timestamp; barred from features.
+curr_datetime,Visit t,Timestamp,0.0,EXCLUDED (CHRONO SPLIT ONLY),TEMPORAL PARTITION KEY,Visit timestamp used solely for chronological train/test partitioning.
+pond_id,Metadata,Identifier,0.0,EXCLUDED (GROUP KEY ONLY),SPATIAL LEAKAGE IF USED AS PREDICTOR,Pond identifier used strictly for GroupKFold cross-validation grouping; barred from feature matrix.

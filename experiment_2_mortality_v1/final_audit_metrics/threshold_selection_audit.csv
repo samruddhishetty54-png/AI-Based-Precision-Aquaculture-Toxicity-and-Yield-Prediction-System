@@ -1,0 +1,10 @@
+threshold,true_positives,false_negatives,false_positives,true_negatives,recall,precision,f1_score,status
+0.1,37,7,1674,882,0.8409,0.0216,0.0422,Exploratory sensitivity grid
+0.15,32,12,774,1782,0.7273,0.0397,0.0753,Exploratory sensitivity grid
+0.2,26,18,412,2144,0.5909,0.0594,0.1079,Exploratory sensitivity grid
+0.25,21,23,239,2317,0.4773,0.0808,0.1382,Exploratory sensitivity grid
+0.3,12,32,171,2385,0.2727,0.0656,0.1057,Exploratory sensitivity grid
+0.35,9,35,81,2475,0.2045,0.1,0.1343,Exploratory sensitivity grid
+0.4,6,38,46,2510,0.1364,0.1154,0.125,Exploratory sensitivity grid
+0.45,1,43,20,2536,0.0227,0.0476,0.0308,Exploratory sensitivity grid
+0.5,0,44,6,2550,0.0,0.0,0.0,Default pipeline decision boundary

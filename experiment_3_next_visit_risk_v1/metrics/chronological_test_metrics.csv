@@ -1,0 +1,5 @@
+protocol,model_name,pr_auc,roc_auc,recall,precision,f1_score,tp,fn,fp,tn,new_spikes_detected,new_spikes_total,no_skill_pr_baseline
+Chronological_Test,Persistence_Baseline,,,0.0526,0.0577,0.055,3,54,49,1928,0,54,0.028
+Chronological_Test,Dummy_Prior,0.028,0.5,0.0,0.0,0.0,0,57,0,1977,0,54,0.028
+Chronological_Test,Logistic_Regression,0.0309,0.501,0.3684,0.0236,0.0444,21,36,868,1109,18,54,0.028
+Chronological_Test,Random_Forest,0.0305,0.5061,0.3158,0.0263,0.0486,18,39,666,1311,15,54,0.028

@@ -1,0 +1,9 @@
+evaluation_regime,model_name,pair_weighted_mae_g,pair_weighted_pct_improvement,pond_weighted_mae_g,pond_weighted_pct_improvement,beats_persistence_under_pair_weighting,beats_persistence_under_pond_weighting
+"All Pairs (Operational Unfiltered Population, N=1689)",Persistence,93.38,0.0,81.65,0.0,False,False
+"All Pairs (Operational Unfiltered Population, N=1689)",Linear_Regression,117.74,-26.09,103.23,-26.43,False,False
+"All Pairs (Operational Unfiltered Population, N=1689)",Random_Forest,112.15,-20.11,100.06,-22.54,False,False
+"All Pairs (Operational Unfiltered Population, N=1689)",Gradient_Boosting,127.34,-36.38,112.45,-37.72,False,False
+"Clean Pairs (Retrospective Exploratory Subset, N=1601)",Persistence,65.47,0.0,63.02,0.0,False,False
+"Clean Pairs (Retrospective Exploratory Subset, N=1601)",Linear_Regression,59.92,8.47,55.84,11.39,True,True
+"Clean Pairs (Retrospective Exploratory Subset, N=1601)",Random_Forest,63.87,2.44,65.32,-3.65,True,False
+"Clean Pairs (Retrospective Exploratory Subset, N=1601)",Gradient_Boosting,57.22,12.59,53.52,15.07,True,True

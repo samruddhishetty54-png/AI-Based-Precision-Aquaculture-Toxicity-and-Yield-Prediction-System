@@ -1,0 +1,11 @@
+regime,model_name,train_pairs_count,cross_pairs_excluded,test_pairs_count,test_mae_g,test_rmse_g,test_r2,delta_mae_vs_persistence_g,pct_improvement_vs_persistence,persistence_test_mae_g,persistence_test_rmse_g,persistence_test_r2
+All_Pairs,Persistence,741,67,1689,93.38,189.96,0.76,0.0,0.0,93.38,189.96,0.76
+All_Pairs,Mean_Predictor,741,67,1689,332.06,387.94,-0.0011,238.69,-255.61,93.38,189.96,0.76
+All_Pairs,Linear_Regression,741,67,1689,117.74,194.14,0.7493,24.36,-26.09,93.38,189.96,0.76
+All_Pairs,Random_Forest,741,67,1689,112.15,184.37,0.7739,18.77,-20.11,93.38,189.96,0.76
+All_Pairs,Gradient_Boosting,741,67,1689,127.34,208.75,0.7101,33.97,-36.38,93.38,189.96,0.76
+Clean_Plausible_Pairs,Persistence,703,60,1601,65.47,101.84,0.9306,0.0,0.0,65.47,101.84,0.9306
+Clean_Plausible_Pairs,Mean_Predictor,703,60,1601,329.31,386.58,-0.0,263.85,-403.02,65.47,101.84,0.9306
+Clean_Plausible_Pairs,Linear_Regression,703,60,1601,59.92,96.53,0.9376,-5.54,8.47,65.47,101.84,0.9306
+Clean_Plausible_Pairs,Random_Forest,703,60,1601,63.87,83.28,0.9536,-1.6,2.44,65.47,101.84,0.9306
+Clean_Plausible_Pairs,Gradient_Boosting,703,60,1601,57.22,78.07,0.9592,-8.25,12.59,65.47,101.84,0.9306

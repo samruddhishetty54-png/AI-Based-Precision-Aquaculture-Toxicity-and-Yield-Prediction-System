@@ -1,0 +1,9 @@
+setting,tn,fp,fn,tp
+GroupKFold_Persistence,4341,245,204,110
+GroupKFold_Dummy_Prior,4586,0,314,0
+GroupKFold_Logistic_Regression,3588,998,90,224
+GroupKFold_Random_Forest,4001,585,122,192
+Chronological_Persistence,1928,49,54,3
+Chronological_Dummy_Prior,1977,0,57,0
+Chronological_Logistic_Regression,1109,868,36,21
+Chronological_Random_Forest,1311,666,39,18

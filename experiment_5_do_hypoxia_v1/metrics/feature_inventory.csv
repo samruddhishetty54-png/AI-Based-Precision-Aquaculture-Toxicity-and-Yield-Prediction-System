@@ -1,0 +1,32 @@
+feature_name,timing,type,missing_pct,status,leakage_risk,rationale
+curr_do,Visit t,Continuous (mg/L),0.0,SELECTED,NONE,Mandatory initial morning DO baseline anchor; provides point-of-departure for respiration.
+curr_ph,Visit t,Continuous (pH),0.0,SELECTED,NONE,Morning pH reflects overnight CO2 accumulation and community respiration.
+curr_temp_c,Visit t,Continuous (°C),0.0,SELECTED,NONE,Water temperature directly controls oxygen solubility and bacterial decomposition kinetics.
+curr_turbidity_cm,Visit t,Continuous (cm),44.48,SELECTED,NONE,Secchi disk transparency; low values denote heavy algal bloom or clay suspension.
+curr_tds_ppt,Visit t,Continuous (ppt),49.19,SELECTED,NONE,Total dissolved solids modulating ionic strength and gas solubility.
+curr_feed_amount_kg,Visit t,Continuous (kg),6.47,SELECTED,NONE,Daily feed input driving unconsumed waste decomposition and biochemical oxygen demand (BOD).
+curr_feed_per_acre_kg,Visit t,Continuous (kg/acre),12.61,SELECTED,NONE,Nutrient loading normalized by water surface area.
+curr_stocking_density,Profile / Visit t,Continuous (#/acre),13.87,SELECTED,NONE,Biological crowding covariate governing cumulative fish gill respiration.
+curr_weight,Visit t,Continuous (g),48.65,SELECTED,NONE,Fish size; larger biomass incurs greater oxygen uptake per individual.
+curr_dead_fish,Visit t,Continuous (count),0.0,SELECTED,NONE,Acute mortality indicator at visit t reflecting health crisis or benthic collapse.
+curr_air_gulping,Visit t,Continuous (count),0.0,SELECTED,NONE,Active piping behavioral distress reflecting current hypoxic exposure.
+curr_tail_splashing,Visit t,Continuous (count),0.0,SELECTED,NONE,Agitation and stress symptom.
+pond_area_acres,Pond Profile,Continuous (acres),8.77,SELECTED,NONE,Surface area available for wind re-aeration and atmospheric diffusion.
+depth_meters,Pond Profile,Continuous (m),0.0,SELECTED,NONE,Water column depth governing thermal stratification and benthic oxygen depletion.
+gap_days,Scheduled Revisit,Continuous (days),0.0,SELECTED (SCHEDULED INTERVAL),NONE (IF PRE-SCHEDULED),Revisit interval (3-45 days); pre-scheduled target prediction horizon.
+curr_time_hour,Visit t,Continuous (hour),0.0,SELECTED,NONE,"Controls for slight sampling time variation (e.g., 06:30 vs 07:45 AM)."
+day_of_year,Metadata,Integer (1-365),0.0,SELECTED,NONE,"Captures tropical seasonality, monsoon cloud cover, and summer heatwaves."
+month,Metadata,Integer (1-12),0.0,SELECTED,NONE,Calendar month covariate.
+curr_water_color,Visit t,Categorical,0.0,SELECTED,NONE,"Water color reflecting algal bloom density (Dark green, Light green, Saturated green)."
+curr_weather,Visit t,Categorical,0.0,SELECTED,NONE,"Meteorological state at visit t (Sunny, Cloudy, Rainy, Foggy)."
+curr_species,Pond Profile,Categorical,0.0,SELECTED,NONE,"Species mix (Catla, Rohu, Roopchand, Pangasius)."
+farm_equipment,Pond Profile,Categorical,0.0,SELECTED,NONE,"Mechanical aeration infrastructure (aerators, water pumps)."
+feed_type,Pond Profile,Categorical,0.0,SELECTED,NONE,"Physical feed type (floating pellets, mash)."
+region,Metadata,Categorical,0.0,SELECTED,NONE,Farming district baseline (Eluru vs Nellore).
+next_do,Visit t+1,Continuous (mg/L),0.0,PRIMARY REGRESSION TARGET,TARGET VARIABLE,Dissolved oxygen nadir to be predicted; strictly excluded from inputs.
+next_hypoxia_3,Visit t+1,Binary (0/1),0.0,PRIMARY CLASSIFICATION TARGET,TARGET VARIABLE,Moderate hypoxia indicator (next_do < 3.0); strictly excluded from inputs.
+next_hypoxia_2,Visit t+1,Binary (0/1),0.0,SECONDARY CLASSIFICATION TARGET,TARGET VARIABLE,Severe hypoxia indicator (next_do < 2.0); strictly excluded from inputs.
+delta_do,Derived t+1,Continuous (mg/L),0.0,EXCLUDED (FUTURE TARGET DERIVATIVE),DIRECT TARGET LEAKAGE,Difference (next_do - curr_do); barred from features.
+next_datetime,Visit t+1,Timestamp,0.0,EXCLUDED (FUTURE METADATA),FUTURE LEAKAGE,Future timestamp; barred from features.
+curr_datetime,Visit t,Timestamp,0.0,EXCLUDED (CHRONO SPLIT ONLY),TEMPORAL PARTITION KEY,Visit timestamp used solely for chronological train/test partitioning.
+pond_id,Metadata,Identifier,0.0,EXCLUDED (GROUP KEY ONLY),SPATIAL LEAKAGE IF USED AS PREDICTOR,Pond identifier used strictly for GroupKFold cross-validation grouping; barred from feature matrix.

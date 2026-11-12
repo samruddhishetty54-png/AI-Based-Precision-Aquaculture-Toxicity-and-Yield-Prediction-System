@@ -1,0 +1,6 @@
+model_name,gkf_train_mae_mg_l,gkf_train_rmse_mg_l,gkf_train_r2,gkf_pct_imp_vs_persistence,chrono_test_mae_mg_l,chrono_test_rmse_mg_l,chrono_test_r2,chrono_test_pct_imp_vs_persistence,beats_persistence_in_test
+Persistence,0.7628,1.0971,-0.3204,0.0,0.5334,0.8237,-0.7071,0.0,False
+Historical_Mean,0.6578,0.9557,-0.0021,13.76,0.3963,0.645,-0.0467,25.7,True
+Ridge_Regression,0.6296,0.8984,0.1144,17.46,0.5181,2.0092,-9.157,2.87,True
+Random_Forest_Regressor,0.5946,0.8585,0.1915,22.04,0.4172,0.6602,-0.0965,21.79,True
+Gradient_Boosting_Regressor,0.602,0.871,0.1677,21.07,0.426,0.6668,-0.1186,20.13,True

@@ -1,0 +1,5 @@
+model_name,threshold_used,test_pr_auc,no_skill_baseline,test_roc_auc,test_precision,test_recall,test_f1,confusion_matrix
+Persistence_Classifier,curr_do < 2.0,0.0451,0.0452,0.4978,0.04,0.0326,0.0359,"TP=3,FP=72,FN=89,TN=1870"
+Logistic_Regression,Risk Threshold (p=0.10),0.0435,0.0452,0.4654,0.0417,0.6957,0.0786,"TP=64,FP=1472,FN=28,TN=470"
+Random_Forest_Classifier,Risk Threshold (p=0.10),0.0496,0.0452,0.5538,0.0449,0.9891,0.086,"TP=91,FP=1934,FN=1,TN=8"
+Gradient_Boosting_Classifier,Risk Threshold (p=0.10),0.0462,0.0452,0.5239,0.0365,0.1196,0.056,"TP=11,FP=290,FN=81,TN=1652"

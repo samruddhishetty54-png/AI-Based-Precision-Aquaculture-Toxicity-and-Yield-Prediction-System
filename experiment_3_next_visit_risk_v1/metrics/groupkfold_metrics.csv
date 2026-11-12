@@ -1,0 +1,5 @@
+protocol,model_name,pr_auc,roc_auc,recall,precision,f1_score,tp,fn,fp,tn,new_spikes_detected,new_spikes_total,no_skill_pr_baseline
+GroupKFold_OOF,Persistence_Baseline,,,0.3503,0.3099,0.3288,110,204,245,4341,0,204,0.0641
+GroupKFold_OOF,Dummy_Prior,0.0602,0.4694,0.0,0.0,0.0,0,314,0,4586,0,204,0.0641
+GroupKFold_OOF,Logistic_Regression,0.2893,0.7876,0.7134,0.1833,0.2917,224,90,998,3588,123,204,0.0641
+GroupKFold_OOF,Random_Forest,0.3461,0.8137,0.6115,0.2471,0.352,192,122,585,4001,90,204,0.0641

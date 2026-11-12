@@ -1,0 +1,2 @@
+total_raw_rows,valid_pairs_count,unique_ponds_in_pairs,min_gap_days,mean_gap_days,median_gap_days,max_gap_days,next_risk_positives,next_risk_negatives,positive_prevalence_pct,stable_safe_0_to_0,new_onset_spikes_0_to_1,recovery_events_1_to_0,persistent_risk_1_to_1
+6945,4900,303,3.0,22.34,22.0,45.0,314,4586,6.41,4341,204,245,110

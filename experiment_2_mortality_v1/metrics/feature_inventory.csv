@@ -1,0 +1,29 @@
+column_name,data_type,missing_count_raw,missing_pct_raw,status,technical_rationale
+pond_id,str,0,0.0,EXCLUDED (METADATA / GROUP KEY),Identifier used strictly for GroupKFold splitting and chronological ordering; barred from feature matrix.
+datetime,datetime64[us],0,0.0,EXCLUDED (METADATA / GROUP KEY),Identifier used strictly for GroupKFold splitting and chronological ordering; barred from feature matrix.
+region,str,0,0.0,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+Weather,str,311,4.48,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+water_color,str,346,4.98,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+dissolved_oxygen_mg_l,float64,0,0.0,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+ph,float64,0,0.0,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+temp_c,float64,0,0.0,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+turbidity_cm,float64,2918,42.02,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+tds_ppt,float64,3303,47.56,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+raw_ammonia_tan_nh3_n_mg_l,float64,1658,23.87,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),Redundant raw TAN or intermediate pathway; consolidated into primary_calculated_nh3_mg_l.
+raw_ammonia_tan_nh3_mg_l,float64,5286,76.11,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),Redundant raw TAN or intermediate pathway; consolidated into primary_calculated_nh3_mg_l.
+reported_ammonia_nh3_unverified_mg_l,float64,5285,76.1,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),Redundant raw TAN or intermediate pathway; consolidated into primary_calculated_nh3_mg_l.
+calculated_nh3_from_tan_n_mg_l,float64,1658,23.87,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),Redundant raw TAN or intermediate pathway; consolidated into primary_calculated_nh3_mg_l.
+calculated_nh3_from_tan_nh3_mg_l,float64,5286,76.11,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),Redundant raw TAN or intermediate pathway; consolidated into primary_calculated_nh3_mg_l.
+primary_calculated_nh3_mg_l,float64,0,0.0,SELECTED,Permitted environmental water quality / contextual predictor available at prediction time.
+nh3_calculation_source,str,0,0.0,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),Redundant raw TAN or intermediate pathway; consolidated into primary_calculated_nh3_mg_l.
+provisional_hypoxia_risk_heuristic,int64,0,0.0,EXCLUDED (HEURISTIC LABEL),Post-hoc heuristic rule label; provisional_severity_heuristic directly incorporates dead fish count.
+provisional_ph_stress_risk_heuristic,int64,0,0.0,EXCLUDED (HEURISTIC LABEL),Post-hoc heuristic rule label; provisional_severity_heuristic directly incorporates dead fish count.
+provisional_ammonia_risk_heuristic,int64,0,0.0,EXCLUDED (HEURISTIC LABEL),Post-hoc heuristic rule label; provisional_severity_heuristic directly incorporates dead fish count.
+provisional_behavioral_distress_observed,int64,0,0.0,EXCLUDED (CLINICAL SYMPTOM),Behavioral distress symptom occurring concurrently with mortality. Excluded to avoid outcome leakage.
+air_gulping_count,float64,1792,25.8,EXCLUDED (CLINICAL SYMPTOM),Behavioral distress symptom occurring concurrently with mortality. Excluded to avoid outcome leakage.
+tail_splashing_count,float64,1790,25.77,EXCLUDED (CLINICAL SYMPTOM),Behavioral distress symptom occurring concurrently with mortality. Excluded to avoid outcome leakage.
+dead_fish_count,float64,1823,26.25,TARGET (EXCLUDED),Direct mathematical source of the classification target (target leakage).
+is_wq_in_range,str,0,0.0,EXCLUDED (HEURISTIC LABEL),Post-hoc heuristic rule label; provisional_severity_heuristic directly incorporates dead fish count.
+parameters_out_of_range,str,5547,79.87,EXCLUDED (HEURISTIC LABEL),Post-hoc heuristic rule label; provisional_severity_heuristic directly incorporates dead fish count.
+provisional_severity_heuristic,str,0,0.0,EXCLUDED (HEURISTIC LABEL),Post-hoc heuristic rule label; provisional_severity_heuristic directly incorporates dead fish count.
+year,int32,0,0.0,EXCLUDED,Excluded to maintain strict experimental validity.

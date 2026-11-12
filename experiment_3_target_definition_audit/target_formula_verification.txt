@@ -1,0 +1,77 @@
+================================================================================
+EXPERIMENT 3: TARGET FORMULA SCIENTIFIC AUDIT & VERIFICATION LOG
+Project: AI-Based Precision Aquaculture Toxicity and Yield Prediction System
+Timestamp: 2026-11-03T22:05:00+05:30
+================================================================================
+
+1. TARGET FORMULA UNDER AUDIT:
+   Existing Implementation in clean_datasets_v2.py (lines 502-505):
+     df_tox['provisional_ammonia_risk_heuristic'] = (
+         (df_tox['primary_calculated_nh3_mg_l'] >= THRESH['toxic_molecular_nh3_heuristic_mg_l']) |
+         (df_tox['raw_ammonia_tan_nh3_n_mg_l'] >= THRESH['tan_caution_heuristic_mg_l'])
+     ).astype(int)
+
+   Configured Thresholds (processed_data_v2/thresholds_config.json):
+     - toxic_molecular_nh3_heuristic_mg_l = 0.05 mg/L
+     - tan_caution_heuristic_mg_l = 1.0 mg/L
+
+2. CHEMICAL REPORTING BASES IN DATASET:
+   - Reporting Basis A (Years 2021-2024, and part of 2025): 'raw_ammonia_tan_nh3_n_mg_l'
+     Total non-null rows: 5287 / 6945 (76.13%)
+     Physical unit: mg/L Total Ammonia Nitrogen as N (TAN-N)
+     Calculation to Molecular NH3: Emerson et al. (1975) equilibrium with MW conversion ratio:
+       NH3_molecular = f * TAN_N * (17.031 / 14.007)
+
+   - Reporting Basis B (Years 2025-2026): 'raw_ammonia_tan_nh3_mg_l'
+     Total non-null rows: 1659 / 6945 (23.89%)
+     Physical unit: mg/L Total Ammonia as NH3 molecular mass
+     Calculation to Molecular NH3: Emerson et al. (1975) equilibrium WITHOUT MW conversion:
+       NH3_molecular = f * TAN_NH3
+
+   - Reporting Basis C (Years 2025-2026): 'reported_ammonia_nh3_unverified_mg_l'
+     Total non-null rows: 1660 / 6945 (23.90%)
+     Physical unit: unverified reported NH3 column; exact test kit protocol not documented.
+     Exact match with raw_ammonia_tan_nh3_mg_l: 743 rows (44.79%); mismatch: 916 rows (55.21%).
+
+3. MATHEMATICAL & STOICHIOMETRIC VERIFICATION:
+   - Nitrogen atomic weight: 14.007 g/mol
+   - Ammonia molecular weight: 17.031 g/mol
+   - Stoichiometric conversion factor (MW_NH3 / MW_N): 1.215892
+   - Equivalent molecular TAN threshold for 1.0 mg/L TAN-N: 1.0 * 1.215892 = 1.215892 mg/L
+   - Equivalent TAN-N threshold for 1.0 mg/L molecular TAN: 1.0 / 1.215892 = 0.822441 mg/L
+
+4. AUDIT FINDINGS & FORMULA ASYMMETRY:
+   Finding 1: Formula Asymmetry Across TAN Bases [Potential Issue]
+     The heuristic rule checks `raw_ammonia_tan_nh3_n_mg_l >= 1.0` but omits `raw_ammonia_tan_nh3_mg_l`.
+     Because 2026 records have `raw_ammonia_tan_nh3_n_mg_l == NaN`, the TAN caution branch never fires in 2026.
+
+   Finding 2: Chemical Consistency Under Stoichiometric Conversion [Verified]
+     If the 1.0 mg/L TAN-N threshold is converted to molecular TAN (1.21589 mg/L):
+     Only 1 observation in 2025-2026 has `raw_ammonia_tan_nh3_mg_l >= 1.21589` (Row 2887, TAN=2.0 mg/L).
+     Row 2887 already had `primary_calculated_nh3_mg_l = 0.0768 >= 0.05` and was already classified as Risk (1).
+     Therefore, stoichiometrically consistent thresholding yields EXACTLY ZERO label changes (0 flips across all 6,945 rows).
+
+   Finding 3: Direct Unconverted 1.0 mg/L Threshold Across Bases [Potential Issue]
+     If an unconverted 1.0 mg/L threshold is applied directly to `raw_ammonia_tan_nh3_mg_l`:
+     Exactly ONE observation across all 6,945 rows changes label from 0 to 1:
+       - Row 2373: pond ara2_51ffa437, date 2025-11-14 07:12:00, temp 27.6 C, pH 7.82, TAN 1.0 mg/L.
+       - Emerson calculation yields molecular NH3 = 0.04302 mg/L (< 0.05 mg/L).
+       - In Experiment 3, this observation appears as the next visit (next_risk target) in exactly ONE test pair
+         (curr = 2025-10-17 07:43:00, next = 2025-11-14 07:12:00; test partition).
+       - Under Def 3, test positive prevalence would shift from 57/2034 (2.80%) to 58/2034 (2.85%), an impact of 0.049%.
+
+   Finding 4: Unverified Reported Ammonia Documentation [Cannot be verified from available data]
+     The origin of `reported_ammonia_nh3_unverified_mg_l` cannot be verified from available files.
+     However, this column is completely excluded from feature matrices and target definitions in Exp 1, 2, and 3.
+
+5. IMPACT ON EXPERIMENT 3 PARTITIONS (next_risk):
+   Existing Positives: Train = 257/2788 (9.22%), Test = 57/2034 (2.8%)
+   Stoichiometrically Consistent (Def 2): Train = 257 (0 flips), Test = 57 (0 flips)
+   Pure Molecular NH3 (Def 1): Train = 256 (1 flip: 0.036%), Test = 56 (1 flip: 0.049%)
+   Unconverted 1.0 mg/L (Def 3): Train = 257 (0 flips), Test = 58 (1 flip: 0.049%)
+
+6. CONCLUSION:
+   The target definition in Experiment 3 is robust. Under the stoichiometrically correct conversion,
+   the formula asymmetry had ZERO practical impact on labels in both training and test partitions.
+   Under alternative definitions, the discrepancy affects at most 1 pair out of 2,034 test pairs (0.049%).
+   No model retraining or dataset modification is required.

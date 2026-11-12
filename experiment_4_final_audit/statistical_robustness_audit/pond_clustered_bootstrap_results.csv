@@ -1,0 +1,7 @@
+evaluation_regime,model_name,mean_delta_mae_g,median_delta_mae_g,ci_lower_95_pct,ci_upper_95_pct,ci_spans_zero,pct_bootstrap_improves_over_persistence,cluster_significance_verdict
+"All Pairs (Operational Unfiltered Population, N=1689)",Linear_Regression,24.3,24.23,18.67,30.43,False,0.0,Statistically significantly inferior to persistence (95% CI strictly positive)
+"All Pairs (Operational Unfiltered Population, N=1689)",Random_Forest,18.7,18.48,11.43,27.25,False,0.0,Statistically significantly inferior to persistence (95% CI strictly positive)
+"All Pairs (Operational Unfiltered Population, N=1689)",Gradient_Boosting,33.85,33.4,23.55,47.09,False,0.0,Statistically significantly inferior to persistence (95% CI strictly positive)
+"Clean Pairs (Retrospective Exploratory Subset, N=1601)",Linear_Regression,-5.54,-5.52,-10.15,-0.93,False,98.98,Statistically significantly superior to persistence (95% CI strictly negative)
+"Clean Pairs (Retrospective Exploratory Subset, N=1601)",Random_Forest,-1.59,-1.62,-6.55,3.52,True,74.16,No statistically significant difference (95% CI spans zero)
+"Clean Pairs (Retrospective Exploratory Subset, N=1601)",Gradient_Boosting,-8.26,-8.24,-12.05,-4.44,False,100.0,Statistically significantly superior to persistence (95% CI strictly negative)

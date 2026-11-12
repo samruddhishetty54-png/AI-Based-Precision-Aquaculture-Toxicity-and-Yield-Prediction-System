@@ -1,0 +1,7 @@
+check_name,result,details
+Train/Test Temporal Disjointness,100% DISJOINT,Train max date = 2024-12-31 06:56:00; Test min date = 2025-01-02 07:10:00. Zero timestamp overlap.
+Cross-Cutoff Horizon Quarantine,78 PAIRS STRICTLY EXCLUDED,All transitions spanning 2025-01-01 are quarantined to prevent lookahead.
+Zero Evening Sensor Leakage,100% PURGED,All evening readings (Type == Evening) quarantined; pure morning-nadir pipeline.
+Pond ID Grouping Isolation,STRICTLY GROUP KEY ONLY,pond_id excluded from feature matrices; used strictly for GroupKFold and clustered bootstrap.
+Preprocessor Training Isolation,FITTED STRICTLY ON TRAIN,"SimpleImputer, StandardScaler, OneHotEncoder fitted strictly on X_train; zero test data leakage."
+Revisit Interval Scope,MACRO-TROPHIC (21.8d MEAN),"Models extension revisit interval, not short-term weather or overnight aeration."

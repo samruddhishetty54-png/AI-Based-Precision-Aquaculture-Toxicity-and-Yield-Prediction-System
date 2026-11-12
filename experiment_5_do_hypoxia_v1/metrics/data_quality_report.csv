@@ -1,0 +1,17 @@
+metric_name,value,unit,interpretation
+Total Evaluated Morning Transitions,6118.0,count,Total consecutive morning inspections across 317 unique ponds
+Excluded Transitions Gap Under 3 Days,413.0,count,Duplicate visits or problem re-inspections within 48h (6.77%)
+Excluded Transitions Gap Over 45 Days,527.0,count,Broken production cycles or seasonal pond fallowing (8.61%)
+Valid Temporal Pairs Retained,5178.0,count,Master temporal pair dataset (3 <= gap <= 45 days)
+Unique Ponds Represented,304.0,count,Unique farming ponds in master dataset
+Chronological Training Pairs (< 2025),3066.0,count,Pairs where both visits occurred before 2025-01-01 (59.21%)
+Quarantined Cross-Cutoff Pairs,78.0,count,Pairs bridging the 2025-01-01 cutoff; strictly excluded (1.51%)
+Chronological Testing Pairs (>= 2025),2034.0,count,Prospective holdout test set (39.28%)
+Training Hypoxia Events (< 3.0 mg/L),473.0,count,Prevalence = 15.43% in training set
+Testing Hypoxia Events (< 3.0 mg/L),172.0,count,Prevalence = 8.46% in prospective testing set
+Training Severe Hypoxia Events (< 2.0 mg/L),263.0,count,Prevalence = 8.58% in training set
+Testing Severe Hypoxia Events (< 2.0 mg/L),92.0,count,Prevalence = 4.52% in prospective testing set
+Chained Transitions with Shared Endpoints,4176.0,count,85.68% of transitions share endpoints in Markovian chains (Dt -> Dt+1 -> Dt+2)
+Pearson Correlation (curr_do vs next_do),0.2892,Pearson r,Autocorrelation over revisit horizon (R2 = 0.0836)
+Persistence Regression R2 on Test Set,-0.7071,R2 score,Persistence is substantially worse than training mean baseline
+Persistence Classification F1 on Test Set,0.1022,F1 score,Persistence misses 90.7% of prospective hypoxia events

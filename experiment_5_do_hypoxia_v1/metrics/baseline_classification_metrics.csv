@@ -1,0 +1,11 @@
+evaluation_protocol,model_name,pr_auc,no_skill_pr_auc,roc_auc,accuracy,balanced_accuracy,precision_at_0_5,recall_at_0_5,f1_score_at_0_5,brier_score,confusion_matrix
+"5-Fold GroupKFold (Train Set, N=3066)",Persistence,0.2703,0.1543,0.6543,0.8304,0.6543,0.4447,0.3996,0.4209,0.1696,"TP=189,FP=236,FN=284,TN=2357"
+"5-Fold GroupKFold (Train Set, N=3066)",Prior_Prevalence_Dummy,0.1543,0.1543,0.5,0.8457,0.5,0.0,0.0,0.0,0.1305,"TP=0,FP=0,FN=473,TN=2593"
+"5-Fold GroupKFold (Train Set, N=3066)",Logistic_Regression,0.3672,0.1543,0.7338,0.7228,0.6823,0.3051,0.6237,0.4097,0.1917,"TP=295,FP=672,FN=178,TN=1921"
+"5-Fold GroupKFold (Train Set, N=3066)",Random_Forest_Classifier,0.5221,0.1543,0.8164,0.8363,0.7338,0.4751,0.5856,0.5246,0.1399,"TP=277,FP=306,FN=196,TN=2287"
+"5-Fold GroupKFold (Train Set, N=3066)",Gradient_Boosting_Classifier,0.5003,0.1543,0.7936,0.8682,0.6187,0.6971,0.2579,0.3765,0.1022,"TP=122,FP=53,FN=351,TN=2540"
+Prospective Chronological Test (N=2034),Persistence,0.0873,0.0846,0.5129,0.8618,0.5129,0.1135,0.093,0.1022,0.1382,"TP=16,FP=125,FN=156,TN=1737"
+Prospective Chronological Test (N=2034),Prior_Prevalence_Dummy,0.0846,0.0846,0.5,0.9154,0.5,0.0,0.0,0.0,0.0823,"TP=0,FP=0,FN=172,TN=1862"
+Prospective Chronological Test (N=2034),Logistic_Regression,0.0781,0.0846,0.4597,0.793,0.4912,0.0751,0.1279,0.0946,0.1614,"TP=22,FP=271,FN=150,TN=1591"
+Prospective Chronological Test (N=2034),Random_Forest_Classifier,0.09,0.0846,0.5363,0.9125,0.4984,0.0,0.0,0.0,0.122,"TP=0,FP=6,FN=172,TN=1856"
+Prospective Chronological Test (N=2034),Gradient_Boosting_Classifier,0.1029,0.0846,0.5457,0.9115,0.4979,0.0,0.0,0.0,0.0809,"TP=0,FP=8,FN=172,TN=1854"

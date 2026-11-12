@@ -1,0 +1,10 @@
+model_name,threshold_type,threshold_value,train_precision,train_recall,train_f1,train_balanced_accuracy,train_tp,train_fp,train_fn,train_tn
+Logistic_Regression,Default (p=0.50),0.5,0.3051,0.6237,0.4097,0.6823,295,672,178,1921
+Logistic_Regression,Max-F1 (p*=0.54),0.54,0.3262,0.5835,0.4185,0.6818,276,570,197,2023
+Logistic_Regression,High-Recall>=80% (p*=0.31),0.31,0.2284,0.8118,0.3565,0.6558,384,1297,89,1296
+Random_Forest_Classifier,Default (p=0.50),0.5,0.4681,0.5899,0.522,0.7338,279,317,194,2276
+Random_Forest_Classifier,Max-F1 (p*=0.51),0.51,0.4859,0.5814,0.5294,0.7346,275,291,198,2302
+Random_Forest_Classifier,High-Recall>=80% (p*=0.33),0.33,0.2848,0.814,0.4219,0.7205,385,967,88,1626
+Gradient_Boosting_Classifier,Default (p=0.50),0.5,0.7045,0.2622,0.3821,0.6211,124,52,349,2541
+Gradient_Boosting_Classifier,Max-F1 (p*=0.22),0.22,0.4775,0.5391,0.5065,0.7158,255,279,218,2314
+Gradient_Boosting_Classifier,High-Recall>=80% (p*=0.09),0.09,0.2717,0.814,0.4074,0.708,385,1032,88,1561

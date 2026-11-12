@@ -1,0 +1,4 @@
+partition,pairing_rule,pair_count,positives,prevalence_pct,min_curr_date,max_curr_date,min_next_date,max_next_date,all_both_visits_before_2025,unique_ponds
+Training_Set,curr_datetime < 2025-01-01 AND next_datetime < 2025-01-01,2788,257,9.22,2021-08-01 07:12:00,2024-12-18 07:44:00,2021-08-16 07:15:00,2024-12-31 06:56:00,True,223
+Cross_Cutoff_Straddling,curr_datetime < 2025-01-01 AND next_datetime >= 2025-01-01,78,0,0.0,2024-12-03 06:52:00,2024-12-31 06:56:00,2025-01-02 06:50:00,2025-01-30 08:03:00,False,78
+Chronological_Test_Set,curr_datetime >= 2025-01-01 AND next_datetime >= 2025-01-01,2034,57,2.8,2025-01-02 06:50:00,2026-06-18 07:54:00,2025-01-09 07:11:00,2026-06-30 07:41:00,False,167

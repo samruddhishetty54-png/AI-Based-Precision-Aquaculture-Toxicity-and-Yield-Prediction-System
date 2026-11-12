@@ -1,0 +1,4 @@
+model_name,fold_1_ap,fold_2_ap,fold_3_ap,fold_4_ap,fold_5_ap,mean_fold_ap,std_fold_ap,pooled_oof_ap,mean_fold_roc_auc,pooled_oof_roc_auc,explanation_for_difference
+Dummy_Prior,0.0643,0.0571,0.0592,0.0622,0.0776,0.0641,0.008,0.0602,0.5,0.4694,Piecewise steps in pooled array due to slight variation in fold training prevalence
+Logistic_Regression,0.3097,0.2332,0.28,0.368,0.314,0.301,0.0494,0.2893,0.7886,0.7876,Minor variance between micro-averaged pooled curve and macro-averaged fold curves
+Random_Forest,0.3445,0.266,0.3327,0.4547,0.3978,0.3592,0.0711,0.3461,0.8146,0.8137,Minor variance between micro-averaged pooled curve and macro-averaged fold curves

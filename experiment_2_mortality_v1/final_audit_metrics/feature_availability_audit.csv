@@ -1,0 +1,29 @@
+column_name,model_status,software_only_availability,operational_dependency
+pond_id,EXCLUDED (METADATA / GROUP KEY),N/A - Feature excluded from model.,N/A
+datetime,EXCLUDED (METADATA / GROUP KEY),N/A - Feature excluded from model.,N/A
+region,SELECTED,YES - Readily available from visual inspection / farm registration metadata.,Visual observation / farm records.
+Weather,SELECTED,YES - Readily available from visual inspection / farm registration metadata.,Visual observation / farm records.
+water_color,SELECTED,YES - Readily available from visual inspection / farm registration metadata.,Visual observation / farm records.
+dissolved_oxygen_mg_l,SELECTED,YES - Directly available from standard water quality optical/electrochemical probes.,Standard IoT probe / handheld meter.
+ph,SELECTED,YES - Directly available from standard water quality optical/electrochemical probes.,Standard IoT probe / handheld meter.
+temp_c,SELECTED,YES - Directly available from standard water quality optical/electrochemical probes.,Standard IoT probe / handheld meter.
+turbidity_cm,SELECTED,YES (with missingness) - Available from Secchi disk / conductivity meter.,Manual Secchi disk / conductivity meter.
+tds_ppt,SELECTED,YES (with missingness) - Available from Secchi disk / conductivity meter.,Manual Secchi disk / conductivity meter.
+raw_ammonia_tan_nh3_n_mg_l,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),N/A - Feature excluded from model.,N/A
+raw_ammonia_tan_nh3_mg_l,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),N/A - Feature excluded from model.,N/A
+reported_ammonia_nh3_unverified_mg_l,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),N/A - Feature excluded from model.,N/A
+calculated_nh3_from_tan_n_mg_l,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),N/A - Feature excluded from model.,N/A
+calculated_nh3_from_tan_nh3_mg_l,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),N/A - Feature excluded from model.,N/A
+primary_calculated_nh3_mg_l,SELECTED,CONDITIONAL / EXTERNAL DEPENDENCY - Requires chemical TAN testing + Emerson formula.,"EXTERNAL CHEMICAL TEST KIT: Cannot be sensed by standard IoT optical/electrochemical probes alone. In a software-only workflow lacking TAN testing, this feature is UNAVAILABLE."
+nh3_calculation_source,EXCLUDED (REDUNDANT / INTERMEDIATE AMMONIA),N/A - Feature excluded from model.,N/A
+provisional_hypoxia_risk_heuristic,EXCLUDED (HEURISTIC LABEL),N/A - Feature excluded from model.,N/A
+provisional_ph_stress_risk_heuristic,EXCLUDED (HEURISTIC LABEL),N/A - Feature excluded from model.,N/A
+provisional_ammonia_risk_heuristic,EXCLUDED (HEURISTIC LABEL),N/A - Feature excluded from model.,N/A
+provisional_behavioral_distress_observed,EXCLUDED (CLINICAL SYMPTOM),N/A - Feature excluded from model.,N/A
+air_gulping_count,EXCLUDED (CLINICAL SYMPTOM),N/A - Feature excluded from model.,N/A
+tail_splashing_count,EXCLUDED (CLINICAL SYMPTOM),N/A - Feature excluded from model.,N/A
+dead_fish_count,TARGET (EXCLUDED),N/A - Feature excluded from model.,N/A
+is_wq_in_range,EXCLUDED (HEURISTIC LABEL),N/A - Feature excluded from model.,N/A
+parameters_out_of_range,EXCLUDED (HEURISTIC LABEL),N/A - Feature excluded from model.,N/A
+provisional_severity_heuristic,EXCLUDED (HEURISTIC LABEL),N/A - Feature excluded from model.,N/A
+year,EXCLUDED,N/A - Feature excluded from model.,N/A

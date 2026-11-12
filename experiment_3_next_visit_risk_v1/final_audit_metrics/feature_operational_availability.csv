@@ -1,0 +1,9 @@
+feature,input_type,prediction_time_availability,workflow_impact
+gap_days,Operational metadata,Known ONLY IF next visit is on a pre-scheduled fixed calendar. Unknown if visits are ad-hoc.,"Can be used as a query parameter (e.g., simulate risk at 7 vs 21 days)."
+curr_nh3,Water chemistry calculation,Requires manual chemical TAN test at visit t. UNAVAILABLE in pure software-only IoT monitoring.,Creates external manual laboratory/kit dependency.
+curr_do,Physical sensor,Directly available from standard optical DO sensor.,Autonomous measurement.
+curr_ph,Physical sensor,Directly available from standard pH probe.,Autonomous measurement.
+curr_temp,Physical sensor,Directly available from standard thermistor probe.,Autonomous measurement.
+curr_turbidity,Manual measurement,Requires Secchi disk clarity measurement (has 37.6% missingness).,Manual field measurement with indicator fallback.
+curr_tds,Physical sensor,Requires conductivity/TDS probe (has 43.3% missingness).,Manual/probe measurement with indicator fallback.
+curr_risk,Binary risk label,EXCLUDED from ML feature matrix; used solely by Persistence Baseline.,Guarantees no label circularity.

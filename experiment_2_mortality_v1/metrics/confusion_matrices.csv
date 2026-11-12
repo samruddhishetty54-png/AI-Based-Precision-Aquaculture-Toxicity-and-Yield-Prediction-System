@@ -1,0 +1,7 @@
+evaluation_setting,true_negatives_tn,false_positives_fp,false_negatives_fn,true_positives_tp
+GroupKFold_Dummy_Prior,5047,0,75,0
+GroupKFold_Logistic_Regression,3957,1090,34,41
+GroupKFold_Random_Forest,4748,299,51,24
+Chronological_Dummy_Prior,2556,0,44,0
+Chronological_Logistic_Regression,2329,227,35,9
+Chronological_Random_Forest,2550,6,44,0

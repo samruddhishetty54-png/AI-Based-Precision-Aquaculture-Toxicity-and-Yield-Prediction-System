@@ -1,0 +1,18 @@
+feature_name,timing_of_collection,operationally_known_at_t,future_leakage_risk,operational_deployment_role
+curr_weight,Visit t (Measured),YES,NONE,Anchor initial condition; required input.
+gap_days,Interval between t and t+1,CONDITIONALLY KNOWN (Requires Pre-scheduled Revisit),POTENTIAL OPERATIONAL LEAKAGE IF REVISIT IS AD-HOC,"If visits are booked by contract/calendar (e.g. 14, 21, or 30 days), gap_days is a known operational query horizon. If revisits are ad-hoc or unbooked, gap_days cannot be known in advance, converting the model into a scenario-based what-if simulator rather than an unassisted forecasting tool."
+curr_feed_amount_kg,Visit t (Morning),YES,NONE,Contemporaneous feeding rate applied on visit day.
+curr_feed_per_acre_kg,Derived at Visit t,YES,NONE,Feed amount normalized by pond area.
+stocking_density_per_acre,Pond Profile / Visit t,YES,NONE,Initial stocking density.
+pond_area_acres,Enrolled Profile,YES,NONE,Static physical dimension.
+depth_meters,Enrolled Profile,YES,NONE,Static physical depth.
+curr_do_mg_l,Visit t (Morning nadir),YES,NONE,Instantaneous water quality at visit t.
+curr_ph,Visit t (Morning),YES,NONE,Instantaneous water quality at visit t.
+curr_temp_c,Visit t (Morning),YES,NONE,Instantaneous water quality at visit t.
+dead_fish_count,Visit t,YES,NONE,Contemporaneous mortality count.
+air_gulping_count,Visit t,YES,NONE,Contemporaneous behavioral distress count.
+tail_splashing_count,Visit t,YES,NONE,Contemporaneous behavioral distress count.
+species,Enrolled Profile,YES,NONE,Static species mix.
+weather,Visit t,YES,NONE,Meteorological condition at visit t.
+region,Metadata,YES,NONE,Administrative district metadata.
+feed_type,Enrolled Profile,YES,NONE,Physical feed type metadata.

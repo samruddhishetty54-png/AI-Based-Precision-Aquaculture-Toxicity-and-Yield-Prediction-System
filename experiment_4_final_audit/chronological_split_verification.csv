@@ -1,0 +1,5 @@
+partition_name,temporal_criterion,pair_count,unique_ponds_count,date_range_start,date_range_end,suspicious_pairs_count,clean_pairs_count,status
+Training Partition (All Pairs),both curr_datetime < 2025-01-01 AND next_datetime < 2025-01-01,741,140,2023-02-10 07:27:00,2024-12-31 06:56:00,38,703,RETAINED FOR TRAINING
+Cross-Cutoff Partition (All Pairs),curr_datetime < 2025-01-01 AND next_datetime >= 2025-01-01,67,67,2024-12-03 06:52:00,2025-01-30 07:40:00,7,60,STRICTLY EXCLUDED (QUARANTINED TO PREVENT HORIZON LEAKAGE)
+Testing Partition (All Pairs),both curr_datetime >= 2025-01-01 AND next_datetime >= 2025-01-01,1689,163,2025-01-02 07:10:00,2026-08-06 07:13:00,88,1601,RETAINED FOR UNBIASED CHRONOLOGICAL EVALUATION
+Total Evaluated Dataset,All 3 <= gap <= 45 days pairs,2497,240,2023-02-10 07:27:00,2026-08-06 07:13:00,133,2364,EXACT RECONCILIATION VERIFIED (741 + 67 + 1689 = 2497; 703 + 60 + 1601 = 2364)

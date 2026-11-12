@@ -1,0 +1,4 @@
+protocol,model_name,precision,recall,f1_score,pr_auc,roc_auc,tp,fp,fn,tn
+Chronological_Test,Dummy_Prior,0.0,0.0,0.0,0.0169,0.5,0,0,44,2556
+Chronological_Test,Logistic_Regression,0.0381,0.2045,0.0643,0.0499,0.5917,9,227,35,2329
+Chronological_Test,Random_Forest,0.0,0.0,0.0,0.0648,0.7322,0,6,44,2550

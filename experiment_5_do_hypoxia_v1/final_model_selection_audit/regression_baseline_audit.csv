@@ -1,0 +1,7 @@
+comparison_baseline,evaluated_model,model_test_mae_mg_l,mean_delta_mae_mg_l,median_delta_mae_mg_l,ci_lower_95,ci_upper_95,pct_draws_beating_baseline,ci_spans_zero,statistical_verdict
+Historical Mean Baseline (MAE = 0.3963 mg/L),Random_Forest_Regressor,0.4172,0.0209,0.021,0.0118,0.0295,0.0,False,Statistically significantly INFERIOR to Historical Mean
+Historical Mean Baseline (MAE = 0.3963 mg/L),Gradient_Boosting_Regressor,0.426,0.0298,0.0297,0.0178,0.0421,0.0,False,Statistically significantly INFERIOR to Historical Mean
+Historical Mean Baseline (MAE = 0.3963 mg/L),Persistence,0.5334,0.1372,0.1372,0.1187,0.1557,0.0,False,Statistically significantly INFERIOR to Historical Mean
+Persistence Baseline (MAE = 0.5334 mg/L),Random_Forest_Regressor,0.4172,-0.1163,-0.1163,-0.1332,-0.1,100.0,False,Statistically significantly SUPERIOR to Persistence
+Persistence Baseline (MAE = 0.5334 mg/L),Gradient_Boosting_Regressor,0.426,-0.1074,-0.1074,-0.1276,-0.0873,100.0,False,Statistically significantly SUPERIOR to Persistence
+Persistence Baseline (MAE = 0.5334 mg/L),Historical_Mean,0.3963,-0.1372,-0.1372,-0.1557,-0.1187,100.0,False,Statistically significantly SUPERIOR to Persistence

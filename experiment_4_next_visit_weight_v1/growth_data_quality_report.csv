@@ -1,0 +1,20 @@
+metric_name,value,unit,interpretation
+Total Evaluated Consecutive Transitions,3137.0,count,Total adjacent pond observations in daily consolidated dataset
+Excluded Gap Under 3 Days,234.0,count,Revisits within < 72h; excluded to prevent sub-revisit noise
+Excluded Gap Over 45 Days,406.0,count,Gaps > 45 days; excluded as broken production cycles
+Total Valid Temporal Pairs,2497.0,count,Full modeling pair dataset (3 <= gap <= 45 days)
+Unique Ponds Represented,240.0,count,Unique farming ponds with valid revisit pairs
+Mean Revisit Gap,23.47,days,Average scheduled farm inspection interval
+Median Revisit Gap,24.02,days,Median scheduled farm inspection interval
+Mean Current Body Weight,532.73,grams,Average initial fish body weight at visit t
+Mean Next Body Weight,573.9,grams,Average subsequent fish body weight at visit t+1 (target)
+Mean Observed Weight Change,41.17,grams,Average somatic growth over revisit interval
+Mean Average Daily Gain (ADG),1.71,g/day,Empirical daily growth rate matching commercial carp bioenergetics
+Normal Positive Growth Pairs (ADG <= 10),1378.0,count,Biologically standard growth events (55.19%)
+Zero Weight Change Pairs (Delta = 0),859.0,count,Coarse rounding to 25/50/100g bins by field officers (34.40%)
+Minor Weight Loss Pairs (-100 < Delta < 0),22.0,count,Cast-net sampling variation across heterogeneous pond cohorts (0.88%)
+High Positive Growth (10 < ADG <= 20),105.0,count,Accelerated juvenile growth or warm-water metabolic surges (4.21%)
+Major Weight Loss Pairs (Delta <= -100),119.0,count,Partial harvest thinning or cycle turnaround restocking (4.77%)
+Extreme Positive Growth (ADG > 20 or Delta > 800),14.0,count,Biologically impossible single-cohort jumps; measurement/species error (0.56%)
+Total Suspicious Pairs Flagged,133.0,count,Combined major weight loss and extreme positive growth anomalies (5.33%)
+Plausible / Clean Pairs,2364.0,count,Clean biological growth trajectory subset for sensitivity benchmarking (94.67%)

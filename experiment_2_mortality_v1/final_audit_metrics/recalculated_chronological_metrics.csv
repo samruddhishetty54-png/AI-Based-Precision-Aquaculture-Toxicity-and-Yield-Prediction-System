@@ -1,0 +1,6 @@
+model_name,decision_threshold,threshold_derivation,pr_auc_ap,roc_auc,recall,precision,f1_score,tp,fn,fp,tn,no_skill_pr_baseline
+Dummy_Prior,0.5,Independent pipeline default (no test leakage),0.0169,0.5,0.0,0.0,0.0,0,44,0,2556,0.0169
+Logistic_Regression,0.5,Independent pipeline default (no test leakage),0.0499,0.5917,0.2045,0.0381,0.0643,9,35,227,2329,0.0169
+Random_Forest_default_0.50,0.5,Independent pipeline default (no test leakage),0.0648,0.7322,0.0,0.0,0.0,0,44,6,2550,0.0169
+Random_Forest_training_tuned_0.40,0.4,Selected strictly by 5-fold CV on 2021-2024 training data (no test leakage),0.0648,0.7322,0.1364,0.1154,0.125,6,38,46,2510,0.0169
+Random_Forest_exploratory_0.20,0.2,EXPLORATORY POST-HOC (selected by inspecting test set; contains test influence),0.0648,0.7322,0.5909,0.0594,0.1079,26,18,412,2144,0.0169

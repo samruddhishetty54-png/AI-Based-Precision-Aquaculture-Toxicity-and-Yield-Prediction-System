@@ -1,0 +1,5 @@
+partition_name,pair_count,unique_ponds,date_range_start,date_range_end,next_do_mean_mg_l,next_do_std_mg_l,hypoxia_3_count,hypoxia_3_prevalence_pct,severe_hypoxia_2_count,severe_hypoxia_2_prevalence_pct,status
+Training Partition,3066,225,2021-07-04 08:20:00,2024-12-31 06:56:00,3.498,0.955,473,15.43,263,8.58,RETAINED FOR TRAINING & CV
+Quarantined Buffer Partition,78,78,2024-12-03 06:52:00,2025-01-30 08:03:00,3.633,0.514,4,5.13,1,1.28,STRICTLY QUARANTINED (EXCLUDED FROM TRAIN & TEST)
+Holdout Testing Partition,2034,167,2025-01-02 06:50:00,2026-08-06 07:13:00,3.362,0.631,172,8.46,92,4.52,RETAINED FOR PROSPECTIVE EVALUATION
+Total Master Dataset,5178,304,2021-07-04 08:20:00,2026-08-06 07:13:00,3.447,0.84,649,12.53,356,6.88,COMPLETE RECONCILED POPULATION

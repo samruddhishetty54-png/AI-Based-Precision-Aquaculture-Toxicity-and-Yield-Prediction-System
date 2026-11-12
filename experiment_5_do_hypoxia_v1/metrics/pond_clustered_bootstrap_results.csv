@@ -1,0 +1,8 @@
+task_type,model_name,mean_difference,median_difference,ci_lower_95,ci_upper_95,pct_draws_improving_over_baseline,ci_spans_zero,statistical_verdict
+Regression (Delta MAE vs Persistence),Historical_Mean,-0.1372,-0.1372,-0.1557,-0.1187,100.0,False,Statistically significantly superior to persistence (95% CI strictly negative)
+Regression (Delta MAE vs Persistence),Ridge_Regression,-0.0155,-0.0188,-0.0831,0.0727,67.14,True,No significant difference (95% CI spans zero)
+Regression (Delta MAE vs Persistence),Random_Forest_Regressor,-0.1163,-0.1163,-0.1332,-0.1,100.0,False,Statistically significantly superior to persistence (95% CI strictly negative)
+Regression (Delta MAE vs Persistence),Gradient_Boosting_Regressor,-0.1074,-0.1074,-0.1276,-0.0873,100.0,False,Statistically significantly superior to persistence (95% CI strictly negative)
+Classification (Delta PR-AUC vs No-Skill),Logistic_Regression,-0.005,-0.0054,-0.0151,0.007,18.54,True,No statistically significant difference under cluster-bootstrap (95% CI spans zero)
+Classification (Delta PR-AUC vs No-Skill),Random_Forest_Classifier,0.0065,0.0062,-0.0049,0.0205,83.56,True,No statistically significant difference under cluster-bootstrap (95% CI spans zero)
+Classification (Delta PR-AUC vs No-Skill),Gradient_Boosting_Classifier,0.0129,0.0123,-0.0022,0.0316,95.22,True,No statistically significant difference under cluster-bootstrap (95% CI spans zero)

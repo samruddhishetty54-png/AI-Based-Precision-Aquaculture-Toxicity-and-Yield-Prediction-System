@@ -1,0 +1,180 @@
+{
+  "pipeline_version": "v2.0",
+  "destination_folder": "processed_data_v2",
+  "corrections_implemented": [
+    "Applied 17.031/14.007 molecular weight ratio to Emerson calculation from TAN (NH3-N).",
+    "Applied direct Emerson calculation to TAN (NH3) without double-applying MW ratio.",
+    "Preserved reported Ammonia-NH3 as separate unverified measurement.",
+    "Maintained distinct column names with explicit sources and units.",
+    "Cross-checked multi-populated ammonia records for consistency.",
+    "Externalized heuristic risk thresholds to thresholds_config.json as provisional heuristics.",
+    "Implemented point-in-time temporal matching (merge_asof) to eliminate look-ahead leakage.",
+    "Preserved uninvented physical measurements and genuine NaNs.",
+    "Preserved original datasets in 'dataset/' and existing 'processed_data/' intact."
+  ],
+  "datasets": {
+    "water_quality_v2": {
+      "dataset": "water_quality.csv",
+      "original_rows": 12431,
+      "original_columns": 53,
+      "missing_before_total": 364516,
+      "cleaning_decisions": [
+        "Created parsed datetime and sorted chronologically within each pond.",
+        "Resolved 4 duplicate timestamps by retaining the record with complete sensor vitals.",
+        "Purged 100% empty columns: ['Alkalinity (mg/L)', 'Hardness (mg/L)'].",
+        "Excluded 22 unverified notes and intervention workflow columns.",
+        "Excluded 30 incomplete rows missing DO, pH, or Temp to prevent synthetic sensor hallucination.",
+        "Replaced physically invalid 0.0g weights and 0.0kg feed entries with NaN; never zero-filled."
+      ],
+      "duplicate_records_found": 4,
+      "columns_removed": [
+        "Alkalinity (mg/L)",
+        "Hardness (mg/L)",
+        "Observer",
+        "Is follow up possible",
+        "Reason follow up not possible",
+        "Corrective actions requested",
+        "Corrective actions requested (other)",
+        "Corrective actions amount requested",
+        "Corrective actions implemented",
+        "Corrective actions implementation date",
+        "Corrective actions taken",
+        "Corrective actions taken (other)",
+        "Corrective actions taken (details)",
+        "Non-prescribed corrective actions taken",
+        "Reason not implemented",
+        "Water quality improved after corrective actions",
+        "Corrective action notes",
+        "Notes (mortalities)",
+        "Self-initiated corrective actions taken",
+        "Self-initiated corrective actions implemented on (exact date)",
+        "Self-initiated corrective actions implemented (date range)",
+        "Self-initiated corrective actions notes",
+        "Notes",
+        "Corrective actions"
+      ],
+      "vital_sensor_missing_count": 30,
+      "final_rows": 12399,
+      "final_columns": 31,
+      "columns_retained": [
+        "pond_id",
+        "region",
+        "Date of data collection",
+        "Time of data collection",
+        "Type",
+        "Is follow up",
+        "Group",
+        "Pond status",
+        "Equipment",
+        "Weather",
+        "DO (mg/L)",
+        "pH",
+        "Turbidity (in cm)",
+        "Ammonia\u2014TAN (NH3-N) (mg/L)",
+        "Ammonia\u2014TAN (NH3) (mg/L)",
+        "Ammonia\u2014NH3 (mg/L)",
+        "Temp (in \u00b0C)",
+        "TDS (ppt)",
+        "Water color",
+        "Is WQ in range?",
+        "Parameters out of range",
+        "Individuals air gulping",
+        "Individuals tail splashing",
+        "Dead fish",
+        "Feed amount (kg)",
+        "Stocking density (per acre)",
+        "Species",
+        "Weight",
+        "Have fish been helped",
+        "datetime",
+        "date_parsed"
+      ],
+      "missing_after_total": 74761,
+      "output_file": "D:\\AI-Based-Precision-Aquaculture-Toxicity-and-Yield-Prediction-System\\processed_data_v2\\water_quality_cleaned_v2.csv"
+    },
+    "enrolled_ponds_v2": {
+      "dataset": "enrolled_ponds.csv",
+      "original_rows": 324,
+      "original_columns": 20,
+      "cleaning_decisions": [
+        "Preserved all 324 pond enrollment profiles as point-in-time historical snapshots to prevent look-ahead leakage.",
+        "Preserved missing 'Pond area in acres' as genuine NaN; zero synthetic dimensions injected."
+      ],
+      "final_rows": 324,
+      "final_columns": 21,
+      "columns_retained": [
+        "pond_id",
+        "region",
+        "Date of data collection",
+        "Enrollment mechanism",
+        "Added by",
+        "Property area in acres",
+        "Pond area in acres",
+        "Depth in meters",
+        "Status",
+        "Measurements",
+        "Culture change",
+        "Equipment",
+        "Existing practices",
+        "Notes (existing practices)",
+        "Fertilizers used",
+        "Feed type",
+        "Feed source",
+        "Feed brand or name",
+        "Fish source (e.g. hatchery name)",
+        "Notes",
+        "profile_date"
+      ],
+      "output_file": "D:\\AI-Based-Precision-Aquaculture-Toxicity-and-Yield-Prediction-System\\processed_data_v2\\enrolled_ponds_v2.csv"
+    },
+    "dropouts_v2": {
+      "dataset": "dropouts.csv",
+      "original_rows": 128,
+      "original_columns": 8,
+      "cleaning_decisions": [
+        "Preserved all 128 dropout records; filled missing descriptive fields with explicit 'Unknown' / 'None recorded'."
+      ],
+      "final_rows": 128,
+      "final_columns": 8,
+      "output_file": "D:\\AI-Based-Precision-Aquaculture-Toxicity-and-Yield-Prediction-System\\processed_data_v2\\dropouts_v2.csv"
+    },
+    "Data_Model_IoTMLCQ_2024_v2": {
+      "dataset": "Data_Model_IoTMLCQ_2024.xlsx",
+      "original_rows": 4383,
+      "original_columns": 28,
+      "cleaning_decisions": [
+        "Standardized ISO datetimes and validated proper float/int types across all 4,383 records."
+      ],
+      "final_rows": 4383,
+      "final_columns": 29,
+      "output_file": "D:\\AI-Based-Precision-Aquaculture-Toxicity-and-Yield-Prediction-System\\processed_data_v2\\iot_water_model_v2.csv"
+    }
+  },
+  "task_specific_datasets_v2": {
+    "toxicity_analysis_v2": {
+      "file": "D:\\AI-Based-Precision-Aquaculture-Toxicity-and-Yield-Prediction-System\\processed_data_v2\\toxicity_analysis_v2.csv",
+      "rows": 6945,
+      "columns": 27,
+      "method_breakdown": {
+        "emerson_from_tan_nh3_n_with_mw_conversion": 5287,
+        "emerson_from_tan_nh3_direct": 1658
+      },
+      "multi_populated_ammonia_records": 2,
+      "uncalculated_records_count": 0
+    },
+    "fish_health_growth_v2": {
+      "file": "D:\\AI-Based-Precision-Aquaculture-Toxicity-and-Yield-Prediction-System\\processed_data_v2\\fish_health_growth_analysis_v2.csv",
+      "rows": 9422,
+      "columns": 17,
+      "missing_historical_profile_count": 5,
+      "missing_pond_area_count": 144
+    },
+    "feeding_analysis_v2": {
+      "file": "D:\\AI-Based-Precision-Aquaculture-Toxicity-and-Yield-Prediction-System\\processed_data_v2\\feeding_analysis_v2.csv",
+      "rows": 6752,
+      "columns": 17,
+      "missing_historical_profile_count": 12,
+      "missing_pond_area_count": 585
+    }
+  }
+}

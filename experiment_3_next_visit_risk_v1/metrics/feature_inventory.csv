@@ -1,0 +1,19 @@
+feature_name,source_time,type,status,rationale
+gap_days,Known at visit t,Continuous (days),SELECTED,Scheduled revisit interval (3-45 days) modulating biogeochemical decay and accumulation time.
+curr_do,Visit t,Continuous (mg/L),SELECTED,Current dissolved oxygen reflecting photosynthetic stability and microbial oxygen debt.
+curr_ph,Visit t,Continuous (pH scale),SELECTED,Current pH driving carbonate buffer and chemical un-ionized ammonia fraction.
+curr_temp,Visit t,Continuous (C),SELECTED,Current water temperature driving biological metabolic and nitrification rates.
+curr_turbidity,Visit t,Continuous (cm),SELECTED,Current Secchi depth clarity reflecting phytoplankton bloom density.
+curr_tds,Visit t,Continuous (ppt),SELECTED,Current total dissolved solids reflecting salinity and ionic strength.
+tds_is_missing,Visit t,Binary indicator,SELECTED,Missingness flag for TDS probe testing.
+turbidity_is_missing,Visit t,Binary indicator,SELECTED,Missingness flag for Secchi clarity testing.
+curr_weather,Visit t,Categorical,SELECTED,"Current meteorological condition (Sunny, Cloudy, Rainy, Foggy)."
+curr_color,Visit t,Categorical,SELECTED,Current predominant algal community visual appearance.
+region,Metadata,Categorical,SELECTED,Farming district baseline (Eluru vs Nellore).
+curr_nh3,Visit t,Continuous (mg/L),SELECTED,Current calculated un-ionized ammonia level serving as continuous initial condition.
+curr_risk,Visit t,Binary,EXCLUDED FROM ML (USED IN PERSISTENCE),Current binary risk label barred from ML feature matrix to prevent circularity; used strictly as the Persistence Baseline input.
+next_risk,Visit t+1,Binary,TARGET (EXCLUDED FROM FEATURES),Future risk status to be predicted (target variable).
+next_nh3,Visit t+1,Continuous,EXCLUDED (FUTURE MEASUREMENT),Future un-ionized ammonia reading at t+1; direct target leakage.
+next_datetime,Visit t+1,Timestamp,EXCLUDED (FUTURE METADATA),Next sampling timestamp; barred from features.
+curr_datetime,Visit t,Timestamp,EXCLUDED (CHRONO SPLIT ONLY),Sampling timestamp used strictly for chronological train/test partitioning.
+pond_id,Metadata,Identifier,EXCLUDED (GROUP KEY ONLY),Pond ID used strictly for GroupKFold cross-validation.

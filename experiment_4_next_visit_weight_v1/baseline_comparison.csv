@@ -1,0 +1,11 @@
+regime,model_name,gkf_pooled_mae_g,gkf_pooled_rmse_g,gkf_pooled_r2,gkf_imp_vs_persistence_pct,chrono_test_mae_g,chrono_test_rmse_g,chrono_test_r2,chrono_imp_vs_persistence_pct,improves_on_persistence_in_chrono
+All_Pairs,Persistence,98.16,189.65,0.7342,0.0,93.38,189.96,0.76,0.0,False
+All_Pairs,Mean_Predictor,309.84,368.06,-0.0012,-215.64,332.06,387.94,-0.0011,-255.61,False
+All_Pairs,Linear_Regression,100.75,179.0,0.7632,-2.64,117.74,194.14,0.7493,-26.09,False
+All_Pairs,Random_Forest,85.51,159.62,0.8117,12.89,112.15,184.37,0.7739,-20.11,False
+All_Pairs,Gradient_Boosting,91.83,169.71,0.7872,6.45,127.34,208.75,0.7101,-36.38,False
+Clean_Plausible_Pairs,Persistence,71.22,104.73,0.9177,0.0,65.47,101.84,0.9306,0.0,False
+Clean_Plausible_Pairs,Mean_Predictor,307.53,366.18,-0.0065,-331.78,329.31,386.58,-0.0,-403.02,False
+Clean_Plausible_Pairs,Linear_Regression,52.46,69.67,0.9636,26.34,59.92,96.53,0.9376,8.47,True
+Clean_Plausible_Pairs,Random_Forest,50.0,68.96,0.9643,29.8,63.87,83.28,0.9536,2.44,True
+Clean_Plausible_Pairs,Gradient_Boosting,49.33,67.38,0.9659,30.75,57.22,78.07,0.9592,12.59,True

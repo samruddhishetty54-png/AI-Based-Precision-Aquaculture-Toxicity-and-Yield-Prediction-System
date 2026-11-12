@@ -1,0 +1,4 @@
+protocol,model_name,precision,recall,f1_score,pr_auc,roc_auc,tp,fp,fn,tn,no_skill_pr_baseline
+GroupKFold_OOF,Dummy_Prior,0.0,0.0,0.0,0.0134,0.4593,0,0,75,5047,0.0146
+GroupKFold_OOF,Logistic_Regression,0.0363,0.5467,0.068,0.0577,0.6923,41,1090,34,3957,0.0146
+GroupKFold_OOF,Random_Forest,0.0743,0.32,0.1206,0.0939,0.7607,24,299,51,4748,0.0146

@@ -1,0 +1,16 @@
+{
+  "metadata": {
+    "status": "provisional_heuristic",
+    "scientific_validation": "unverified",
+    "warning": "These thresholds are unverified operational heuristics. They are NOT validated against published site-specific bioassays or regulatory standards, and must not be presented as ground truth.",
+    "configurable": true
+  },
+  "heuristics": {
+    "hypoxia_sublethal_do_mg_l": 4.0,
+    "hypoxia_acute_do_mg_l": 3.0,
+    "ph_stress_lower": 6.5,
+    "ph_stress_upper": 8.5,
+    "toxic_molecular_nh3_heuristic_mg_l": 0.05,
+    "tan_caution_heuristic_mg_l": 1.0
+  }
+}

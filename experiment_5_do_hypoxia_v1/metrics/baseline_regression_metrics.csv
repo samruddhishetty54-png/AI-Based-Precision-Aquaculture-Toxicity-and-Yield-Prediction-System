@@ -1,0 +1,11 @@
+evaluation_protocol,model_name,mae_mg_l,rmse_mg_l,r2_score,pct_improvement_vs_persistence,improves_over_persistence
+"5-Fold GroupKFold (Train Set, N=3066)",Persistence,0.7628,1.0971,-0.3204,0.0,False
+"5-Fold GroupKFold (Train Set, N=3066)",Historical_Mean,0.6578,0.9557,-0.0021,13.76,True
+"5-Fold GroupKFold (Train Set, N=3066)",Ridge_Regression,0.6392,0.9082,0.0951,16.2,True
+"5-Fold GroupKFold (Train Set, N=3066)",Random_Forest_Regressor,0.5946,0.8584,0.1916,22.04,True
+"5-Fold GroupKFold (Train Set, N=3066)",Gradient_Boosting_Regressor,0.6018,0.8708,0.1681,21.1,True
+Prospective Chronological Test (N=2034),Persistence,0.5334,0.8237,-0.7071,0.0,False
+Prospective Chronological Test (N=2034),Historical_Mean,0.3963,0.645,-0.0467,25.7,True
+Prospective Chronological Test (N=2034),Ridge_Regression,0.5356,2.0741,-9.8233,-0.42,False
+Prospective Chronological Test (N=2034),Random_Forest_Regressor,0.4174,0.6604,-0.0974,21.75,True
+Prospective Chronological Test (N=2034),Gradient_Boosting_Regressor,0.4271,0.668,-0.1228,19.92,True

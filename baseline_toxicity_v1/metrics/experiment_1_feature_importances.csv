@@ -1,0 +1,46 @@
+feature,importance
+ph,0.400278154280537
+tds_ppt,0.20638285831681888
+temp_c,0.14350954495305304
+dissolved_oxygen_mg_l,0.06312267422282442
+region_Eluru,0.04625305646057444
+turbidity_cm,0.03458260583519693
+region_Nellore,0.029651521170890996
+water_color_Light green,0.0183591896883916
+Weather_Sunny,0.013435841928998138
+tds_ppt_is_missing,0.008506590088479283
+Weather_Missing,0.006854850366142786
+water_color_Dark green,0.00658037928472863
+water_color_Light brown,0.004292964287193245
+water_color_Missing,0.0032984913194704884
+Weather_Cloud cover 75%,0.0020348559950574235
+Weather_Cloud cover 25%,0.0018907072114890532
+"Weather_Sunny, Cloud cover 50%",0.0016584912899701531
+turbidity_cm_is_missing,0.001634670663286336
+Weather_Cloud cover 100%,0.00133952809535339
+water_color_Saturated green,0.0012660837210464882
+Weather_Cloud cover 50%,0.0010660817891655322
+"Weather_Sunny, Cloud cover 25%",0.0010107346520782173
+Weather_Foggy,0.0008900780505021863
+"Weather_Sunny, Cloud cover 75%",0.0006841074015626245
+"Weather_Cloud cover 100%, Rainy",0.0003908654260860884
+water_color_Transparent,0.00036890775743806786
+"Weather_Sunny, Foggy",0.0002094919250119001
+Weather_Rainy,0.00015827470305838296
+"Weather_Cloud cover 100%, Foggy",0.00012585046253000884
+water_color_Dark brown,6.386461869455202e-05
+"Weather_Foggy, Sunny",5.727143492380895e-05
+"Weather_Sunny, Cloud cover 75%, Foggy",3.6856682888681096e-05
+"Weather_Cloud cover 50%, Sunny",2.9117213282308003e-06
+"Weather_Sunny, Cloud cover 50%, Foggy",1.2907033542351767e-06
+"Weather_Rainy, Foggy",3.534918747793521e-07
+"Weather_Sunny, Cloud cover 100%",0.0
+"Weather_Cloud cover 75%, Foggy",0.0
+"Weather_Cloud cover 25%, Cloud cover 75%",0.0
+"Weather_Cloud cover 25%, Sunny",0.0
+"Weather_Cloud cover 50%, Foggy",0.0
+"Weather_Sunny, Cloud cover 25%, Foggy",0.0
+"Weather_Foggy, Sunny, Cloud cover 50%",0.0
+"Weather_Cloud cover 50%, Cloud cover 100%",0.0
+"Weather_Cloud cover 25%, Cloud cover 50%",0.0
+"Weather_Cloud cover 75%, Rainy",0.0
