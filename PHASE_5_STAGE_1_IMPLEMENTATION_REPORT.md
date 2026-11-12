@@ -136,3 +136,4 @@ Ran 93 tests in 5.022s -> OK (unittest)
 
 Stage 1 of Phase 5 is **COMPLETE and VERIFIED**.  
 The dashboard presentation layer, design system, navigation hierarchy, and scientific guardrails are fully operational. Full interactive page-level logic will be implemented in subsequent approved stages.
+
