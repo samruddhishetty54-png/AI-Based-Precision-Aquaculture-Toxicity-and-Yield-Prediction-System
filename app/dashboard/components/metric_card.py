@@ -13,7 +13,7 @@ def render_metric_card(
     """Render a clean, modern card container displaying a single key metric."""
     sub_html = f'<div class="aqua-metric-subtitle">{subtitle}</div>' if subtitle else ""
     ref_html = (
-        f'<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">'
+        f'<div style="font-size: 0.75rem; color: #334155; font-weight: 500; margin-top: 0.25rem;">'
         f'<em>Benchmark: {benchmark_ref}</em>'
         f'</div>'
         if benchmark_ref

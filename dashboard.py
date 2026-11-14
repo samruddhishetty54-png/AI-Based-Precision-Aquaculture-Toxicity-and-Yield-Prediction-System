@@ -77,11 +77,11 @@ pages = {
 with st.sidebar:
     st.markdown(
         """
-        <div style="padding: 0.5rem 0 1rem 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 1rem;">
-            <div style="font-size: 1.1rem; font-weight: 700; color: #0c2340;">
+        <div style="padding: 0.5rem 0 1rem 0; border-bottom: 1px solid #cbd5e1; margin-bottom: 1rem;">
+            <div style="font-size: 1.15rem; font-weight: 800; color: #0c2340;">
                 🐟 Precision AquaDSS
             </div>
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+            <div style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-top: 0.15rem;">
                 Toxicity & Yield Decision Support (BAI507P)
             </div>
         </div>
@@ -98,8 +98,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(
         """
-        <div style="font-size: 0.72rem; color: #64748b; line-height: 1.35;">
-            <strong>System Safeguards:</strong><br>
+        <div style="font-size: 0.75rem; color: #1e293b; line-height: 1.45; font-weight: 500;">
+            <strong style="color: #0c2340;">System Safeguards:</strong><br>
             • Decision-support only (<code>is_automatic_control = False</code>)<br>
             • Sampling interval: 3–45 days (routine visits)<br>
             • Morning observations: 06:00–08:30 AM<br>

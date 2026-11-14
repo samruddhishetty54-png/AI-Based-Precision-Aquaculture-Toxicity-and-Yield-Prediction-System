@@ -130,14 +130,15 @@ def test_launcher_startup():
 
     finally:
         print("[LAUNCHER TEST] Stopping Streamlit process...", flush=True)
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
-        else:
+        try:
             proc.terminate()
+            proc.wait(timeout=5)
+        except Exception:
             try:
-                proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
                 proc.kill()
+                proc.wait(timeout=5)
+            except Exception:
+                pass
 
     return started
 

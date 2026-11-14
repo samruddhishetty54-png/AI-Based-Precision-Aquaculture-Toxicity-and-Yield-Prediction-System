@@ -22,7 +22,7 @@ def render_registry_status_bar(registry: Any) -> None:
                 <span style="font-weight: 600; font-size: 0.85rem; color: #0c2340;">
                     Model Registry Status: <span style="color: {status_color}; font-weight: 700;">{status}</span> ({ready_count}/{total_count} models operational)
                 </span>
-                <span style="font-size: 0.75rem; color: #64748b;">
+                <span style="font-size: 0.75rem; color: #1e293b; font-weight: 500;">
                     Read-only artifacts • Zero runtime retraining
                 </span>
             </div>
