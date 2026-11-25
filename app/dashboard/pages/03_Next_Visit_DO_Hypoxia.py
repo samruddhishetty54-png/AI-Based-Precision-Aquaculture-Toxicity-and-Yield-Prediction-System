@@ -3,46 +3,37 @@
 Operational Category: BENCHMARK (Model Benchmark & Experimental Screening).
 Provides:
 1. Operational Point Regression Benchmark: Historical Training Mean DO (3.50 mg/L, exact 3.4984 mg/L).
-   - Prominently labeled as a CONSTANT HISTORICAL BENCHMARK, NOT A DYNAMIC PREDICTION.
-   - Lowest chronological test error (MAE = 0.3963 mg/L, RMSE = 0.6450 mg/L) vs Persistence (MAE = 0.5334 mg/L)
-     and ML regressors (RF MAE = 0.4172 mg/L, GBDT MAE = 0.4260 mg/L).
-2. Multi-Week Sampling Horizon (3–45 days) & Morning Observation Window (06:00–08:30 AM).
-   - Explicitly NOT verified pre-dawn daily minimum DO.
-   - Zero claims of real-time sensor streaming, diurnal cycling, or overnight forecasts.
-3. Exploratory Moderate Hypoxia Screening (< 3.0 mg/L, Gradient Boosting Classifier).
-   - Retained solely as an exploratory screening score for inspection queues, NEVER an automated alarm.
-   - Full disclosure of audited false alarm burden: 50.25% alarm rate, 91.00% False Discovery Rate at p* = 0.090.
-4. Transparent Educational Rejection of Severe Hypoxia Classifier (< 2.0 mg/L, Random Forest).
-   - Rejected as degenerate (99.56% false alarm rate due to class_weight probability distortion).
+2. Exploratory Moderate Hypoxia Screening (< 3.0 mg/L, Gradient Boosting Classifier).
+3. Pond-level historical morning DO trajectory and MAE comparison charts.
+4. Expandable scientific disclaimers and transparent rejection of the degenerate < 2.0 mg/L classifier.
 """
 
-from typing import Dict, Any, Optional
-import math
 import pandas as pd
-import streamlit as st
 import plotly.graph_objects as go
+import streamlit as st
 
-from app.dashboard.utils.styles import inject_custom_css, PALETTE
-from app.dashboard.utils.helpers import (
-    format_float,
-    format_percentage,
-    validate_defensive_bounds,
-    detect_simulation_source,
-)
-from app.dashboard.components.header import render_page_header
+from app.core.data_manager import load_dataset
 from app.dashboard.components.banners import (
     render_decision_support_banner,
     render_multi_week_observation_banner,
     render_simulation_warning_banner,
+    render_uploaded_context_notice,
 )
+from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.metric_card import render_metric_card
-from app.models.registry import get_model_registry
+from app.dashboard.utils.helpers import (
+    detect_simulation_source,
+    format_percentage,
+    validate_defensive_bounds,
+)
+from app.dashboard.utils.styles import PALETTE, inject_custom_css
 from app.models.do_hypoxia import (
-    HISTORICAL_TRAIN_MEAN_DO,
-    HISTORICAL_TRAIN_MEAN_DISPLAY,
     FROZEN_HIGH_RECALL_THRESHOLD,
     FROZEN_MAX_F1_THRESHOLD,
+    HISTORICAL_TRAIN_MEAN_DISPLAY,
+    HISTORICAL_TRAIN_MEAN_DO,
 )
+from app.models.registry import get_model_registry
 
 
 def render_mae_comparison_chart() -> go.Figure:
@@ -54,7 +45,7 @@ def render_mae_comparison_chart() -> go.Figure:
         "Persistence Baseline",
     ]
     maes = [0.3963, 0.4172, 0.4260, 0.5334]
-    colors = ["#0284c7", "#64748b", "#94a3b8", "#cbd5e1"]
+    colors = ["#087F72", "#43BFC0", "#526873", "#DCE9E6"]
 
     fig = go.Figure(
         data=[
@@ -64,16 +55,69 @@ def render_mae_comparison_chart() -> go.Figure:
                 marker_color=colors,
                 text=[f"{v:.4f} mg/L" for v in maes],
                 textposition="auto",
+                marker_line_width=0,
             )
         ]
     )
     fig.update_layout(
-        title="Prospective Chronological Holdout MAE Comparison (Experiment 5)",
+        title=dict(
+            text="Prospective Holdout MAE Comparison (Experiment 5)",
+            font=dict(size=14, color="#0c2340"),
+        ),
         yaxis_title="Mean Absolute Error (mg/L)",
         xaxis_title="Forecasting Method",
         template="plotly_white",
-        height=320,
-        margin=dict(l=40, r=40, t=50, b=40),
+        height=300,
+        margin=dict(l=40, r=20, t=50, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        yaxis=dict(gridcolor="#f1f5f9"),
+    )
+    return fig
+
+
+def render_pond_do_history_chart(df_pond: pd.DataFrame, pond_label: str) -> go.Figure:
+    """Render historical morning DO trajectory for the selected pond."""
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df_pond["datetime"],
+            y=df_pond["dissolved_oxygen_mg_l"],
+            mode="lines+markers",
+            name="Morning DO (mg/L)",
+            line=dict(color=PALETTE["teal_primary"], width=2.5),
+            marker=dict(size=6),
+            hovertemplate="Date: %{x|%Y-%m-%d}<br>Morning DO: %{y:.2f} mg/L<extra></extra>",
+        )
+    )
+    fig.add_hline(
+        y=HISTORICAL_TRAIN_MEAN_DISPLAY,
+        line_dash="dash",
+        line_color="#0284c7",
+        annotation_text="Benchmark Mean (3.50 mg/L)",
+        annotation_position="top right",
+    )
+    fig.add_hline(
+        y=3.0,
+        line_dash="dot",
+        line_color="#d97706",
+        annotation_text="Screening Cutoff (<3.0 mg/L)",
+        annotation_position="bottom right",
+    )
+    fig.update_layout(
+        title=dict(
+            text=f"Historical Morning DO Trend ({pond_label})",
+            font=dict(size=14, color="#0c2340"),
+        ),
+        xaxis_title="Observation Date",
+        yaxis_title="Dissolved Oxygen (mg/L)",
+        template="plotly_white",
+        height=300,
+        margin=dict(l=40, r=20, t=50, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        yaxis=dict(gridcolor="#f1f5f9"),
+        hovermode="x unified",
     )
     return fig
 
@@ -88,36 +132,66 @@ def render_page() -> None:
         category_key="BENCHMARK",
     )
 
-    render_decision_support_banner()
-    render_multi_week_observation_banner()
+    render_uploaded_context_notice(["do_mg_l", "exp5_benchmark_next_do_mg_l"])
 
-    # Section 1: Operating Mode & Context
-    st.markdown("### 1. Operating Mode & Operational Context")
-    mode = st.radio(
-        "Select Operating Mode:",
-        options=[
-            "Manual Field Inspection Entry (Operational Field Telemetry)",
-            "Simulated Benchmark Scenario (Quarantined Synthetic Demonstration)",
-        ],
-        index=0,
-        horizontal=True,
-    )
+    with st.expander("Decision-Support & Sampling Context Notices", expanded=False):
+        render_decision_support_banner()
+        render_multi_week_observation_banner()
+        st.caption(
+            "Software validation bounds are defensive integrity checks, "
+            "NOT validated biological safety thresholds."
+        )
+
+    # ── Observation Inputs & Pond Pre-fill ─────────────────────────────
+    st.markdown("#### Pond Selection & Observation Inputs")
+    ctrl1, ctrl2 = st.columns([1, 1])
+    with ctrl1:
+        mode = st.radio(
+            "Operating Mode:",
+            options=[
+                "Manual / Pond Record Entry (Operational)",
+                "Simulated Benchmark Scenario (Quarantined)",
+            ],
+            index=0,
+            horizontal=True,
+        )
     is_simulated = "Simulated" in mode
     _, status_tag, operational_permitted = detect_simulation_source(is_simulated_flag=is_simulated)
 
     if is_simulated:
         render_simulation_warning_banner()
-        st.warning(
-            f"**Operational Gating Status:** `{status_tag}`. "
-            f"Operational farm use permitted = `{operational_permitted}`."
-        )
 
-    # Section 2: Pond Inspection Observation Form
-    st.markdown("### 2. Pond Water Quality Telemetry & Revisit Parameters")
-    st.caption(
-        "Enter physical pond observations. Software validation bounds are defensive integrity checks, "
-        "NOT validated biological safety thresholds."
-    )
+    default_do = 4.20
+    default_temp = 28.0
+    default_ph = 7.80
+    selected_pond = "Manual Entry"
+    df_pond_hist = pd.DataFrame()
+
+    with ctrl2:
+        try:
+            df_tox = load_dataset("toxicity_analysis")
+            pond_opts = ["Manual Entry"] + sorted(df_tox["pond_id"].dropna().astype(str).unique().tolist())
+            selected_pond = st.selectbox(
+                "Pre-fill from Historical Pond Record (Optional):",
+                options=pond_opts,
+                index=0,
+                key="do_pond_prefill",
+            )
+            if selected_pond != "Manual Entry":
+                df_pond_hist = df_tox[df_tox["pond_id"].astype(str) == selected_pond].copy()
+                if "datetime" in df_pond_hist.columns:
+                    df_pond_hist["datetime"] = pd.to_datetime(df_pond_hist["datetime"], errors="coerce")
+                    df_pond_hist = df_pond_hist.dropna(subset=["datetime"]).sort_values("datetime")
+                valid_do = df_pond_hist.dropna(subset=["dissolved_oxygen_mg_l"])
+                if not valid_do.empty:
+                    latest_row = valid_do.iloc[-1]
+                    default_do = float(latest_row["dissolved_oxygen_mg_l"])
+                    if pd.notna(latest_row.get("temp_c")):
+                        default_temp = float(latest_row["temp_c"])
+                    if pd.notna(latest_row.get("ph")):
+                        default_ph = float(latest_row["ph"])
+        except Exception:
+            selected_pond = "Manual Entry"
 
     with st.form("do_hypoxia_input_form"):
         c1, c2 = st.columns(2)
@@ -126,39 +200,38 @@ def render_page() -> None:
                 "Current Morning DO (mg/L):",
                 min_value=0.0,
                 max_value=25.0,
-                value=4.20,
+                value=max(0.0, min(25.0, default_do)),
                 step=0.1,
                 format="%.2f",
-                help="Morning DO observation (06:00–08:30 AM). Software boundary: 0.0 - 25.0 mg/L.",
+                help="Morning observation (06:00–08:30 AM). Software boundary: 0.0 - 25.0 mg/L.",
             )
+        with c2:
             revisit_days = st.slider(
                 "Farm Revisit Interval (days):",
                 min_value=3,
                 max_value=45,
                 value=21,
                 step=1,
-                help="Discrete farm inspection interval. Audited range: 3 to 45 days (median ~21 days).",
+                help="Discrete routine farm revisit interval (3–45 days; median ~21 days).",
             )
 
-        with c2:
-            st.markdown(
-                """
-                <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.88rem; color: #0f172a; line-height: 1.45;">
-                    <strong>Observation Protocol Disclaimers:</strong><br>
-                    • <strong>Time Window:</strong> Standard morning inspection observations (<strong>06:00–08:30 AM</strong>).<br>
-                    • <strong>NOT Daily Minimum DO:</strong> These readings are <strong>NOT verified pre-dawn daily minimum DO</strong>.<br>
-                    • <strong>Zero Real-Time Streaming:</strong> No continuous sensor streaming, diurnal cycle tracking, or overnight forecasts.<br>
-                    • <strong>Horizon:</strong> Forecast applies to the <strong>next routine visit ({revisit_days} days)</strong>, not tomorrow morning.
-                </div>
-                """.format(revisit_days=revisit_days),
-                unsafe_allow_html=True,
-            )
-
-        with st.expander("Optional Auxiliary Pond Parameters (Water Temp, pH, Feed, Biomass)", expanded=False):
+        with st.expander("Optional Auxiliary Pond Parameters (Temp, pH, Feed, Biomass)", expanded=False):
             opt_c1, opt_c2, opt_c3 = st.columns(3)
             with opt_c1:
-                temp_val = st.number_input("Water Temperature (°C):", min_value=10.0, max_value=45.0, value=28.0, step=0.5)
-                ph_val = st.number_input("Water pH:", min_value=0.0, max_value=14.0, value=7.80, step=0.05)
+                temp_val = st.number_input(
+                    "Water Temperature (°C):",
+                    min_value=10.0,
+                    max_value=45.0,
+                    value=max(10.0, min(45.0, default_temp)),
+                    step=0.5,
+                )
+                ph_val = st.number_input(
+                    "Water pH:",
+                    min_value=0.0,
+                    max_value=14.0,
+                    value=max(0.0, min(14.0, default_ph)),
+                    step=0.05,
+                )
                 turb_val = st.number_input("Secchi Turbidity (cm):", min_value=0.0, max_value=150.0, value=25.0, step=1.0)
             with opt_c2:
                 tds_val = st.number_input("TDS (ppt):", min_value=0.0, max_value=50.0, value=1.2, step=0.1)
@@ -171,18 +244,17 @@ def render_page() -> None:
 
         submitted = st.form_submit_button("Run DO Evaluation & Hypoxia Screening", use_container_width=True)
 
-    # Input defensive validation
+    # Defensive input validation
     val_errs = []
     for p_name, p_val in [("do", do_val), ("water_temp", temp_val), ("ph", ph_val), ("revisit_interval", revisit_days)]:
         ok, msg = validate_defensive_bounds(p_name, p_val)
         if not ok and msg:
             val_errs.append(msg)
-
     if val_errs:
         for err in val_errs:
             st.warning(err)
 
-    # Backend Model Execution
+    # Backend model execution
     registry = get_model_registry()
     payload = {
         "curr_do": float(do_val),
@@ -206,158 +278,84 @@ def render_page() -> None:
         st.error(f"Error during DO & Hypoxia evaluation: {exc}")
         return
 
-    # Section 3: Primary Operational Point Regression Benchmark: Historical Mean DO
+    # ── Analysis Results ──────────────────────────────────────────────
     st.markdown("---")
-    st.markdown("### 3. Primary Operational Point Regression Benchmark")
-    st.markdown(
-        r"""
-        <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #f8fafc; border: 2px solid #0284c7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem;">
-            <div style="font-size: 0.8rem; text-transform: uppercase; color: #0284c7; font-weight: 700; letter-spacing: 0.05em;">
-                Designated Operational Primary Baseline
-            </div>
-            <div style="font-size: 1.6rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
-                Historical Training Mean Baseline: 3.50 mg/L
-            </div>
-            <div style="font-size: 0.88rem; color: #1e293b; font-weight: 500; margin-top: 0.25rem;">
-                Exact unconditional training mean: <code>3.4984 mg/L</code> (N = 3,066 training pairs, 2021–2024).
-            </div>
-            <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 0.5rem 0.75rem; border-radius: 4px; margin-top: 0.75rem; font-size: 0.8rem; color: #991b1b;">
-                <strong>MANDATORY SCIENTIFIC DISCLAIMER:</strong> This is an <strong>unconditional constant historical benchmark, NOT a dynamic biological prediction</strong>.
-                It represents the central statistical attractor of commercial morning observations across irregular 3–45 day revisit intervals.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    bc1, bc2, bc3, bc4 = st.columns(4)
-    with bc1:
-        render_metric_card(
-            title="Point Benchmark",
-            value=f"{HISTORICAL_TRAIN_MEAN_DISPLAY:.2f} mg/L",
-            subtitle="Unconditional Constant Mean",
-            benchmark_ref="Exact: 3.4984 mg/L",
-        )
-    with bc2:
-        render_metric_card(
-            title="Holdout MAE",
-            value="0.3963 mg/L",
-            subtitle="RMSE = 0.6450 mg/L",
-            benchmark_ref="Lowest Error in Exp 5",
-        )
-    with bc3:
-        render_metric_card(
-            title="Persistence Baseline",
-            value="0.5334 mg/L",
-            subtitle="R² = -0.7071 (p < 10⁻¹²)",
-            benchmark_ref="Persistence Outperformed",
-        )
-    with bc4:
-        render_metric_card(
-            title="Complex ML Regressors",
-            value="RF: 0.4172 mg/L",
-            subtitle="GBDT: 0.4260 mg/L",
-            benchmark_ref="ML Failed to Beat Mean",
-        )
-
-    # Plotly Chart & Contextual Explanation
-    st.plotly_chart(render_mae_comparison_chart(), use_container_width=True)
-
-    with st.expander("Why did the constant historical mean beat complex machine learning models on commercial ponds?", expanded=False):
-        st.markdown(
-            """
-            **Audited Finding from Experiment 5:**
-            1. **Multi-Week Sampling Decoupling:** Routine commercial farm visits occur at irregular intervals of **3 to 45 days (median ~21 days)**. At this multi-week time scale, diurnal dissolved oxygen kinetics (respiration and photosynthesis cycles occurring over hours) are completely decoupled from current readings.
-            2. **Unmeasured Farm Interventions:** Farmers operate emergency aerators, pump fresh canal water, exchange pond water, or apply lime between scheduled visits without logging telemetry. These unrecorded physical interventions disrupt continuous regression models.
-            3. **Statistical Dominance:** On holdout commercial ponds (2025–2026), predicting the unconditional training mean ($3.4984\\text{ mg/L}$) achieved an **MAE of 0.3963 mg/L**, statistically superior to persistence (MAE = 0.5334 mg/L, $p < 10^{-12}$) and superior to Random Forest (MAE = 0.4172 mg/L) and GBDT (MAE = 0.4260 mg/L).
-            4. **Scientific Honesty:** Rather than presenting an illusion of high-tech machine learning precision, the system transparently deploys the historical training mean as the primary point benchmark.
-            """
-        )
-
-    # Section 4: Exploratory Moderate Hypoxia Screening (< 3.0 mg/L)
-    st.markdown("---")
-    st.markdown("### 4. Exploratory Moderate Hypoxia Screening (< 3.0 mg/L)")
-    st.caption("Gradient Boosting Classifier for inspection queue risk prioritization. Strictly exploratory; never an automated emergency alert.")
+    st.subheader("DO Benchmark & Hypoxia Screening Results")
+    if is_simulated:
+        st.caption(f"Mode: `{status_tag}` (operational_use_permitted = `{operational_permitted}`).")
 
     hyp_screening = res.get("exploratory_hypoxia_screening", {})
     hyp_score = hyp_screening.get("hypoxia_risk_score")
     is_flagged = hyp_screening.get("screening_flag")
 
-    hc1, hc2, hc3, hc4 = st.columns(4)
-    with hc1:
+    rc1, rc2, rc3, rc4 = st.columns(4)
+    with rc1:
         render_metric_card(
-            title="Hypoxia Risk Score",
-            value=format_percentage(hyp_score, decimals=1) if hyp_score is not None else "0.095 PR-AUC",
-            subtitle="Gradient Boosting Probability",
-            benchmark_ref="No-Skill Baseline = 0.0846",
+            title="Next-Visit DO Benchmark",
+            value=f"{HISTORICAL_TRAIN_MEAN_DISPLAY:.2f} mg/L",
+            subtitle="Constant historical mean",
+            benchmark_ref="Exact: 3.4984 mg/L",
         )
-    with hc2:
+    with rc2:
         render_metric_card(
-            title="High-Recall Cutoff (p* = 0.090)",
-            value="ALERT FLAGGED" if is_flagged else "UNFLAGGED",
-            subtitle="Screening Threshold: 0.090",
-            benchmark_ref="50.25% Alarm Rate",
+            title="Hypoxia Screening Score",
+            value=format_percentage(hyp_score, decimals=1) if hyp_score is not None else "N/A",
+            subtitle="Exploratory GBDT (< 3.0 mg/L)",
+            benchmark_ref="PR-AUC = 0.095 (Base 0.085)",
         )
-    with hc3:
+    with rc3:
         render_metric_card(
-            title="False Discovery Rate",
-            value="91.00% FDR",
-            subtitle="930 false alarms / 1,022 alerts",
-            benchmark_ref="Unsustainable for Actuation",
+            title="Queue Screening Flag",
+            value="FLAGGED" if is_flagged else "UNFLAGGED",
+            subtitle=f"Cutoff p* = {FROZEN_HIGH_RECALL_THRESHOLD:.3f}",
+            benchmark_ref="91.00% False Discovery Rate",
         )
-    with hc4:
+    with rc4:
         render_metric_card(
-            title="Operational Verdict",
-            value="EXPLORATORY ONLY",
-            subtitle="Manual queue sorting only",
-            benchmark_ref="Zero Automated Actuation",
+            title="Severe Hypoxia (< 2.0)",
+            value="DISABLED",
+            subtitle="REJECTED AS DEGENERATE",
+            benchmark_ref="99.56% false alarm rate",
         )
 
-    # Audited False Alarm Burden Callout
-    st.markdown(
-        """
-        <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #fffbeb; border: 1px solid #f59e0b; border-left: 5px solid #d97706; padding: 1rem 1.25rem; border-radius: 6px; margin-top: 0.5rem; font-size: 0.85rem; color: #92400e;">
-            <strong>AUDITED FALSE ALARM BURDEN DISCLOSURE (Experiment 5 Holdout, N = 2,034 visits):</strong><br>
-            • <strong>High-Recall Cutoff (p* = 0.090):</strong> Detects <strong>53.49% of crises</strong> (92 / 172 true hypoxia visits), but triggers an unsustainable <strong>50.25% alarm rate</strong> (1,022 / 2,034 visits) with a <strong>91.00% False Discovery Rate</strong> (930 false alarms, 80 false negatives).<br>
-            • <strong>Max F1 Cutoff (p* = 0.220):</strong> Alarm rate drops to 8.55% (174 visits), but recall collapses to <strong>9.30%</strong> (only 16 / 172 crises caught; 158 false alarms, FDR = 90.80%).<br>
-            • <strong>STRICT PROHIBITION:</strong> This classifier must <strong>NEVER be used as an independent safety alarm, automated aerator trigger, or emergency actuator</strong>. It is retained solely as an exploratory risk index for manual inspection queue prioritization.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # ── Historical Morning DO Trend ───────────────────────────────────
+    if selected_pond != "Manual Entry" and not df_pond_hist.dropna(subset=["dissolved_oxygen_mg_l"]).empty:
+        st.plotly_chart(
+            render_pond_do_history_chart(df_pond_hist.dropna(subset=["dissolved_oxygen_mg_l"]), selected_pond),
+            use_container_width=True,
+        )
+    else:
+        st.info("Select a historical pond above to view its morning DO trend alongside the 3.50 mg/L benchmark.")
 
-    # Section 5: Transparent Rejection of Severe Hypoxia Classifier (< 2.0 mg/L)
-    st.markdown("---")
-    st.markdown("### 5. Transparent Rejection of Severe Hypoxia Classifier (< 2.0 mg/L)")
-    st.markdown(
-        """
-        <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #fef2f2; border: 1px solid #f87171; border-left: 5px solid #dc2626; padding: 1rem 1.25rem; border-radius: 6px; font-size: 0.85rem; color: #991b1b;">
-            <div style="font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem;">
-                Model Status: REJECTED AS DEGENERATE / DISABLED BY SYSTEM GOVERNANCE
-            </div>
-            <strong>Candidate Model:</strong> Random Forest Classifier (< 2.0 mg/L Severe Hypoxia).<br>
-            <strong>Audit Ground Truth:</strong>
-            <ul>
-                <li>At prospective cutoff <code>p = 0.10</code>, the model flagged <strong>99.56% of test visits</strong> (2,025 out of 2,034 commercial visits) as positive crises.</li>
-                <li><strong>Mathematical Root Cause:</strong> Severe hypoxia is an extreme rare-event condition (only 91 positive cases vs 1,943 negatives in the test set). Applying <code>class_weight='balanced'</code> severely inflated predicted probabilities across the entire feature space, destroying model specificity (specificity = <code>0.0041</code>, generating <strong>1,934 false alarms</strong>).</li>
-                <li><strong>Operational Verdict:</strong> The model is mathematically degenerate and completely unviable for operational deployment. It is permanently disabled and preserved in the audit catalog solely for educational transparency.</li>
-            </ul>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # ── Expandable Technical Details & Disclaimers ────────────────────
+    with st.expander("Primary Benchmark: Why Historical Mean Beats ML", expanded=False):
+        st.markdown(
+            """
+            - **Historical Training Mean Baseline: 3.50 mg/L (`3.4984 mg/L`):** Unconditional training mean (N = 3,066 pairs, 2021–2024). It is a **constant historical benchmark, NOT a dynamic biological prediction**.
+            - **Holdout Performance:** Achieved MAE = **0.3963 mg/L** (RMSE = 0.6450 mg/L), outperforming Persistence (MAE = 0.5334 mg/L, R² = -0.7071, p < 10⁻¹²), Random Forest (MAE = 0.4172 mg/L), and GBDT (MAE = 0.4260 mg/L).
+            - **Root Cause:** Multi-week revisit intervals (**3–45 days**, median ~21 days) decouple diurnal DO kinetics, and unrecorded aeration/water-exchange interventions occur between visits.
+            """
+        )
+        st.plotly_chart(render_mae_comparison_chart(), use_container_width=True)
 
-    # Section 6: Scientific Limitations and Boundaries
-    st.markdown("---")
-    st.markdown("### 6. Scientific Limitations & Governance Boundaries")
-    st.markdown(
-        """
-        - **Sampling Horizon:** All observations and projections reflect discrete routine farm visits scheduled **3 to 45 days apart (median ~21 days)**.
-        - **Observation Window:** Telemetry is gathered during standard **morning farm visits (06:00–08:30 AM)**. These readings **are NOT verified pre-dawn daily minimum DO**.
-        - **Zero Real-Time Claims:** The system strictly disclaims real-time continuous sensor streaming, diurnal kinetics, hourly forecasts, or overnight minimum DO prediction.
-        - **Human Oversight Required:** All outputs are provisional decision-support benchmarks. No automatic equipment control or aerator commands are executed.
-        """
-    )
+    with st.expander("Hypoxia Screening: False Alarm Burden & Severe Classifier Rejection", expanded=False):
+        st.markdown(
+            """
+            - **Moderate Hypoxia Screening (< 3.0 mg/L, GBDT — EXPLORATORY ONLY):** Retained strictly as an exploratory queue-sorting score (never an automated alarm).
+              - At high-recall cutoff (`p* = 0.090`): 53.49% recall (92/172), **50.25% alarm rate** (1,022/2,034), and **91.00% False Discovery Rate** (930 false alarms).
+              - At Max F1 cutoff (`p* = 0.220`): 8.55% alarm rate, 9.30% recall (16/172), 90.80% FDR.
+            - **Severe Hypoxia Classifier (< 2.0 mg/L, Random Forest):** **REJECTED AS DEGENERATE** and disabled by governance. At `p = 0.10`, `class_weight='balanced'` inflated probabilities to flag **99.56% of test visits** (2,025/2,034; specificity = 0.0041; **1,934 false alarms**).
+            """
+        )
+
+    with st.expander("Observation Protocol & Governance Boundaries", expanded=False):
+        st.markdown(
+            """
+            - **Observation Window:** Morning inspection visits (**06:00–08:30 AM**); these are **NOT verified pre-dawn daily minimum DO** readings.
+            - **Sampling Horizon:** Discrete multi-week intervals (**3 to 45 days**, median ~21 days). **Zero Real-Time Streaming**: no continuous sensor streaming, diurnal cycling, or overnight forecasts.
+            - **Human Oversight:** All outputs are decision-support benchmarks with zero automated aerator or equipment actuation (`is_automatic_control = False`).
+            """
+        )
 
 
 if __name__ == "__main__" or "streamlit" in __name__:

@@ -1,9 +1,9 @@
 [theme]
 base = "light"
-primaryColor = "#0d5c75"
-backgroundColor = "#f8fafc"
-secondaryBackgroundColor = "#ffffff"
-textColor = "#0f172a"
+primaryColor = "#087F72"
+backgroundColor = "#F1F7F6"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#173747"
 font = "sans serif"
 
 [browser]
@@ -12,4 +12,3 @@ gatherUsageStats = false
 [server]
 headless = true
 port = 8501
-

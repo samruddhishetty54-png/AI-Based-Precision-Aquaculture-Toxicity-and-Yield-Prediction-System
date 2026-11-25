@@ -16,10 +16,11 @@ import streamlit as st
 
 from app.dashboard.utils.styles import inject_custom_css, PALETTE
 from app.dashboard.utils.helpers import format_float, format_percentage
-from app.dashboard.components.header import render_page_header
+from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.banners import (
     render_decision_support_banner,
     render_multi_week_observation_banner,
+    render_uploaded_context_notice,
 )
 from app.dashboard.components.metric_card import render_metric_card
 from app.core.data_manager import load_dataset, DATASET_METADATA
@@ -91,7 +92,7 @@ def _render_trajectory_chart(df: pd.DataFrame, dataset_key: str, selected_pond: 
                 mode="lines+markers",
                 name="Morning DO (mg/L)",
                 line=dict(color=PALETTE["teal_accent"], width=2),
-                marker=dict(size=6),
+                marker=dict(size=5),
             ))
         if "pH" in plot_df.columns:
             fig.add_trace(go.Scatter(
@@ -109,18 +110,25 @@ def _render_trajectory_chart(df: pd.DataFrame, dataset_key: str, selected_pond: 
                 y=plot_df["Temp (in °C)"],
                 mode="lines+markers",
                 name="Temperature (°C)",
-                line=dict(color="#f59e0b", width=1.5, dash="dot"),
+                line=dict(color="#d97706", width=1.5, dash="dot"),
                 marker=dict(size=4),
             ))
 
         fig.update_layout(
-            title=f"Water Quality Parameter Trajectory ({selected_pond})",
+            title=dict(
+                text=f"Water Quality Parameter Trajectory ({selected_pond})",
+                font=dict(size=14, color="#0c2340"),
+            ),
             xaxis_title="Visit Inspection Date",
             yaxis_title="DO (mg/L) / Temp (°C)",
-            yaxis2=dict(title="pH", overlaying="y", side="right", range=[4.0, 11.0]),
+            yaxis2=dict(title="pH", overlaying="y", side="right", range=[4.0, 11.0], showgrid=False),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=40, r=40, t=50, b=40),
             hovermode="x unified",
+            template="plotly_white",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            yaxis=dict(gridcolor="#f1f5f9"),
         )
 
     elif dataset_key == "toxicity_analysis":
@@ -143,13 +151,20 @@ def _render_trajectory_chart(df: pd.DataFrame, dataset_key: str, selected_pond: 
             ))
 
         fig.update_layout(
-            title=f"Dissolved Oxygen & Emerson Ammonia Trajectory ({selected_pond})",
+            title=dict(
+                text=f"Dissolved Oxygen & Emerson Ammonia Trajectory ({selected_pond})",
+                font=dict(size=14, color="#0c2340"),
+            ),
             xaxis_title="Visit Inspection Date",
             yaxis_title="DO (mg/L)",
-            yaxis2=dict(title="NH3 (mg/L)", overlaying="y", side="right"),
+            yaxis2=dict(title="NH3 (mg/L)", overlaying="y", side="right", showgrid=False),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=40, r=40, t=50, b=40),
             hovermode="x unified",
+            template="plotly_white",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            yaxis=dict(gridcolor="#f1f5f9"),
         )
 
     elif dataset_key == "fish_health_growth":
@@ -160,15 +175,22 @@ def _render_trajectory_chart(df: pd.DataFrame, dataset_key: str, selected_pond: 
                 mode="lines+markers",
                 name="Pond-cohort average weight (g/fish)",
                 line=dict(color=PALETTE["teal_primary"], width=2.5),
-                marker=dict(size=7),
+                marker=dict(size=6),
             ))
 
         fig.update_layout(
-            title=f"Next-Visit Pond-Cohort Average Fish Weight Trajectory ({selected_pond})",
+            title=dict(
+                text=f"Next-Visit Pond-Cohort Average Fish Weight Trajectory ({selected_pond})",
+                font=dict(size=14, color="#0c2340"),
+            ),
             xaxis_title="Sampling Date",
             yaxis_title="Average Weight (grams/fish)",
             margin=dict(l=40, r=40, t=50, b=40),
             hovermode="x unified",
+            template="plotly_white",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            yaxis=dict(gridcolor="#f1f5f9"),
         )
         st.plotly_chart(fig, use_container_width=True)
         st.caption("Pond-cohort average fish weight (grams/fish); does not represent total biomass or harvest yield (kg/ha).")
@@ -184,10 +206,17 @@ def _render_trajectory_chart(df: pd.DataFrame, dataset_key: str, selected_pond: 
             ))
 
         fig.update_layout(
-            title=f"Historical Feed Input Trajectory ({selected_pond})",
+            title=dict(
+                text=f"Historical Feed Input Trajectory ({selected_pond})",
+                font=dict(size=14, color="#0c2340"),
+            ),
             xaxis_title="Inspection Date",
             yaxis_title="Feed Amount (kg/day)",
             margin=dict(l=40, r=40, t=50, b=40),
+            template="plotly_white",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            yaxis=dict(gridcolor="#f1f5f9"),
         )
 
     else:
@@ -207,23 +236,29 @@ def render_page() -> None:
         category_key="HISTORICAL",
     )
 
-    render_decision_support_banner()
-    render_multi_week_observation_banner()
+    render_uploaded_context_notice()
 
-    st.markdown(
-        """
-        <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.9rem 1.2rem; margin-bottom: 1.25rem; font-size: 0.88rem; color: #0f172a; line-height: 1.5;">
-            <strong>📌 Field Sampling Context & Immutability Rules:</strong><br>
-            • <strong>Sampling Cadence:</strong> Discrete routine commercial farm visits (<strong>revisit interval: 3 to 45 days</strong>; median ~21 days).<br>
-            • <strong>Measurement Window:</strong> Morning field records (<strong>06:00–08:30 AM</strong>). These are <em>NOT verified pre-dawn daily minimum DO</em>.<br>
-            • <strong>Missingness Policy:</strong> Natural missing values (NaNs) are strictly preserved as recorded during physical sampling. <em>No synthetic zero-filling or smoothing is applied</em>.<br>
-            • <strong>Simulation Quarantine:</strong> Displays historical field observations from Andhra Pradesh commercial ponds only; <em>strictly segregated from synthetic simulation models</em>.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.expander("Decision-Support & Sampling Context Notices", expanded=False):
+        render_decision_support_banner()
+        render_multi_week_observation_banner()
 
-    # Dataset Selector
+    # --- Session Prediction History ---
+    pred_history = st.session_state.get("prediction_history", [])
+    with st.expander(f"Session Prediction History ({len(pred_history)} run(s))", expanded=bool(pred_history)):
+        if pred_history:
+            hist_df = pd.DataFrame(pred_history)
+            st.dataframe(hist_df, use_container_width=True, hide_index=True)
+            st.download_button(
+                label="Download Prediction History (CSV)",
+                data=hist_df.to_csv(index=False).encode("utf-8"),
+                file_name="precision_aquadss_prediction_history.csv",
+                mime="text/csv",
+                key="download_pred_history_btn",
+            )
+        else:
+            st.info("No batch upload analyses have been executed in this session yet. Use **Upload New Dataset** to run predictions.")
+
+    # --- Inputs: Dataset selector + pond filter ---
     col_sel, col_pond = st.columns([2, 1])
     with col_sel:
         selected_key = st.selectbox(
@@ -240,7 +275,14 @@ def render_page() -> None:
         st.error(f"Failed to load dataset '{selected_key}': {exc}")
         return
 
-    # Metadata & High-Level KPIs
+    with col_pond:
+        if "pond_id" in df.columns:
+            all_ponds = sorted(list(df["pond_id"].dropna().unique()))
+            pond_choice = st.selectbox("Pond ID:", options=["All Ponds"] + all_ponds, index=0)
+        else:
+            pond_choice = "All Ponds"
+
+    # --- Results: KPI metric cards ---
     meta = DATASET_METADATA.get(selected_key, {})
     total_records = len(df)
     unique_ponds = df["pond_id"].nunique() if "pond_id" in df.columns else 0
@@ -255,6 +297,8 @@ def render_page() -> None:
             value=f"{total_records:,}",
             subtitle=f"{meta.get('title', selected_key)}",
             benchmark_ref="Cleaned Field Data v2",
+            icon="📋",
+            accent="teal",
         )
     with c2:
         render_metric_card(
@@ -262,6 +306,8 @@ def render_page() -> None:
             value=f"{unique_ponds} Ponds" if unique_ponds > 0 else "N/A",
             subtitle="Commercial pond cohort",
             benchmark_ref="AP Farm Network",
+            icon="🐟",
+            accent="aqua",
         )
     with c3:
         render_metric_card(
@@ -269,6 +315,8 @@ def render_page() -> None:
             value=f"{na_pct:.1f}%",
             subtitle="Preserved natural NaNs",
             benchmark_ref="Zero Silent Zero-Filling",
+            icon="🔍",
+            accent="warning" if na_pct > 30 else "success",
         )
     with c4:
         render_metric_card(
@@ -276,29 +324,39 @@ def render_page() -> None:
             value="Field Logs",
             subtitle="Irregular multi-week visits",
             benchmark_ref="3 to 45 Day Revisits",
+            icon="🗓️",
+            accent="aqua",
         )
 
-    # Pond Filter & Visual Trajectory
-    with col_pond:
-        if "pond_id" in df.columns:
-            all_ponds = sorted(list(df["pond_id"].dropna().unique()))
-            pond_choice = st.selectbox("Select Pond ID for Trajectory:", options=["All Ponds"] + all_ponds, index=0)
-        else:
-            pond_choice = "All Ponds"
-
-    st.subheader(f"Longitudinal Trajectory: {AVAILABLE_DATASETS[selected_key]}")
+    # --- Trajectory Chart ---
+    render_section_bar(f"Longitudinal Trajectory: {AVAILABLE_DATASETS[selected_key]}")
     _render_trajectory_chart(df, selected_key, pond_choice)
 
-    # Missingness Profile Table
-    st.subheader("Empirical Missingness & Parameter Distribution")
-    st.caption("Detailed column-wise inventory showing true sampling missingness (NaNs preserved).")
-    _render_missingness_summary(df)
+    # --- Missingness & Records ---
+    with st.expander("📊 Missingness & Parameter Distribution", expanded=False):
+        st.caption("Detailed column-wise inventory showing true sampling missingness (NaNs preserved).")
+        _render_missingness_summary(df)
 
-    # Filterable Data Table Preview
-    st.subheader("Field Inspection Records Preview")
-    st.caption(f"Showing up to 100 records for inspection review (Total: {len(df):,} rows).")
-    display_df = df if pond_choice == "All Ponds" or "pond_id" not in df.columns else df[df["pond_id"] == pond_choice]
-    st.dataframe(display_df.head(100), use_container_width=True)
+    with st.expander("📋 Field Inspection Records Preview", expanded=False):
+        st.caption(f"Showing up to 100 records for inspection review (Total: {len(df):,} rows).")
+        display_df = df if pond_choice == "All Ponds" or "pond_id" not in df.columns else df[df["pond_id"] == pond_choice]
+        st.dataframe(display_df.head(100), use_container_width=True)
+
+    # --- Technical Details: Sampling context & immutability ---
+    with st.expander("ℹ️ Field Sampling Context & Immutability Rules", expanded=False):
+        import textwrap
+        st.markdown(
+            textwrap.dedent("""
+            <div class="saas-card" style="font-size: 0.86rem; color: #1e293b; line-height: 1.55;">
+                <strong style="color: #0c2340;">Field Sampling Context & Immutability Rules:</strong><br>
+                • <strong>Sampling Cadence:</strong> Discrete routine commercial farm visits (<strong>revisit interval: 3 to 45 days</strong>; median ~21 days).<br>
+                • <strong>Measurement Window:</strong> Morning field records (<strong>06:00–08:30 AM</strong>). These are <em>NOT verified pre-dawn daily minimum DO</em>.<br>
+                • <strong>Missingness Policy:</strong> Natural missing values (NaNs) are strictly preserved as recorded during physical sampling. <em>No synthetic zero-filling or smoothing is applied</em>.<br>
+                • <strong>Simulation Quarantine:</strong> Displays historical field observations from Andhra Pradesh commercial ponds only; <em>strictly segregated from synthetic simulation models</em>.
+            </div>
+            """).strip(),
+            unsafe_allow_html=True,
+        )
 
 
 if __name__ == "__main__" or "streamlit" in __name__:

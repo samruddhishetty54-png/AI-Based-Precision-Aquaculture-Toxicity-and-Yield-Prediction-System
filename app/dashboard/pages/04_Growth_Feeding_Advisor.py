@@ -34,11 +34,12 @@ from app.dashboard.utils.helpers import (
     validate_defensive_bounds,
     detect_simulation_source,
 )
-from app.dashboard.components.header import render_page_header
+from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.banners import (
     render_decision_support_banner,
     render_multi_week_observation_banner,
     render_simulation_warning_banner,
+    render_uploaded_context_notice,
 )
 from app.dashboard.components.metric_card import render_metric_card
 from app.models.registry import get_model_registry
@@ -52,7 +53,7 @@ def render_weight_mae_chart() -> go.Figure:
         "Gradient Boosting Regressor",
     ]
     maes = [93.38, 112.15, 127.34]
-    colors = ["#0284c7", "#94a3b8", "#cbd5e1"]
+    colors = ["#087F72", "#43BFC0", "#526873"]
 
     fig = go.Figure(
         data=[
@@ -62,16 +63,23 @@ def render_weight_mae_chart() -> go.Figure:
                 marker_color=colors,
                 text=[f"{v:.2f} g" for v in maes],
                 textposition="auto",
+                marker_line_width=0,
             )
         ]
     )
     fig.update_layout(
-        title="Prospective Chronological Holdout MAE Comparison (Experiment 4)",
+        title=dict(
+            text="Prospective Chronological Holdout MAE Comparison (Experiment 4)",
+            font=dict(size=14, color="#0c2340"),
+        ),
         yaxis_title="Mean Absolute Error (grams/fish)",
         xaxis_title="Modeling Approach",
         template="plotly_white",
-        height=320,
+        height=300,
         margin=dict(l=40, r=40, t=50, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        yaxis=dict(gridcolor="#f1f5f9"),
     )
     return fig
 
@@ -86,89 +94,87 @@ def render_page() -> None:
         category_key="ADVISORY",
     )
 
-    render_decision_support_banner()
-    render_multi_week_observation_banner()
+    render_uploaded_context_notice(["exp4_persistence_next_weight_g", "feeding_action", "recommended_feed_kg"])
 
-    # Section 1: Operating Mode & Context
-    st.markdown("### 1. Operating Mode & Operational Context")
-    mode = st.radio(
-        "Select Operating Mode:",
-        options=[
-            "Manual Field Inspection Entry (Operational Field Telemetry)",
-            "Simulated Benchmark Scenario (Quarantined Synthetic Demonstration)",
-        ],
-        index=0,
-        horizontal=True,
-    )
+    with st.expander("Decision-Support & Sampling Context Notices", expanded=False):
+        render_decision_support_banner()
+        render_multi_week_observation_banner()
+
+    # Section 1: Pond Selection & Operating Mode
+    st.markdown("#### Pond Selection & Observation Inputs")
+    ctrl1, ctrl2 = st.columns([1, 1])
+    with ctrl1:
+        mode = st.radio(
+            "Operating Mode:",
+            options=[
+                "Manual / Pond Record Entry (Operational)",
+                "Simulated Benchmark Scenario (Quarantined)",
+            ],
+            index=0,
+            horizontal=True,
+        )
     is_simulated = "Simulated" in mode
     _, status_tag, operational_permitted = detect_simulation_source(is_simulated_flag=is_simulated)
 
     if is_simulated:
         render_simulation_warning_banner()
-        st.warning(
-            f"**Operational Gating Status:** `{status_tag}`. "
-            f"Operational farm use permitted = `{operational_permitted}`."
-        )
 
-    # Section 2: Fish Weight & Feeding Input Panel
-    st.markdown("### 2. Fish Cohort Weight & Feeding Telemetry Input")
-    st.caption(
-        "Enter observed fish cohort weight and feeding baseline. Software bounds are defensive integrity checks, "
-        "NOT validated biological safety limits."
-    )
+    # Optional historical pond pre-fill (strictly read-only reference)
+    default_pond_id = "POND-01"
+    default_weight = 150.0
+    default_feed = 25.0
+    with ctrl2:
+        try:
+            from app.core.data_manager import load_dataset
+            df_gw = load_dataset("fish_health_growth")
+            pond_opts = ["Manual Entry"] + sorted(df_gw["pond_id"].dropna().astype(str).unique().tolist())
+            selected_hist_pond = st.selectbox(
+                "Pre-fill from Historical Pond Record (Optional):",
+                options=pond_opts,
+                index=0,
+                key="growth_pond_prefill",
+            )
+            if selected_hist_pond != "Manual Entry":
+                default_pond_id = selected_hist_pond
+                p_rows = df_gw[df_gw["pond_id"].astype(str) == selected_hist_pond].dropna(subset=["average_fish_weight_g"])
+                if not p_rows.empty:
+                    default_weight = float(p_rows.iloc[-1]["average_fish_weight_g"])
+        except Exception:
+            selected_hist_pond = "Manual Entry"
 
     with st.form("fish_growth_feeding_form"):
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("#### Pond-Cohort Fish Weight Parameters")
             current_weight_val = st.number_input(
-                "Current Observed Average Fish Weight (g/fish):",
+                "Current Average Fish Weight (g/fish):",
                 min_value=0.01,
                 max_value=5000.0,
-                value=150.0,
+                value=max(0.01, min(5000.0, default_weight)),
                 step=5.0,
                 format="%.1f",
-                help="Observed average somatic body weight per fish from recent net sampling. Software boundary: 0.01 - 5000.0 g.",
+                help="Observed average somatic body weight per fish. Software boundary: 0.01 - 5000.0 g.",
             )
             revisit_days = st.slider(
-                "Farm Revisit Interval (days):",
+                "Revisit Interval (days):",
                 min_value=3,
                 max_value=45,
                 value=21,
                 step=1,
-                help="Routine farm revisit interval. Audited range: 3 to 45 days (median ~22 days).",
             )
-
-            st.markdown(
-                """
-                <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.85rem; color: #0f172a; line-height: 1.45;">
-                    <strong>TARGET DEFINITION & NEGATIVE SCOPE:</strong><br>
-                    • <strong>Scope:</strong> Target is strictly <strong>next-visit pond-cohort average fish weight</strong> (<code>Ŵ_{t+1}</code>).<br>
-                    • <strong>Strict Negative Scope:</strong> This is <strong>NOT individual fish growth</strong>, <strong>NOT pond biomass growth</strong>, and <strong>NOT total commercial yield in kg/ha</strong>.<br>
-                    • <strong>Zero Harvest Yield Labels:</strong> The project dataset contains 0% total harvest yield labels. Commercial yield forecasting is strictly unsupported.
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        with c2:
-            st.markdown("#### Baseline Daily Feed & Water Quality")
             feed_mode = st.radio(
                 "Feeding Baseline Method:",
                 options=["Recorded Daily Feed (kg/day)", "Estimate from Biomass Parameters"],
                 index=0,
                 horizontal=True,
             )
-
             if "Recorded" in feed_mode:
                 feed_amount_val = st.number_input(
-                    "Current Baseline Daily Feed (kg/day):",
+                    "Baseline Daily Feed (kg/day):",
                     min_value=0.0,
                     max_value=2000.0,
-                    value=25.0,
+                    value=default_feed,
                     step=1.0,
                     format="%.1f",
-                    help="Currently dispensed daily feed quantity. Software boundary: 0.0 - 2000.0 kg/day.",
                 )
                 pond_area_val = 1.0
                 stocking_density_val = 5000.0
@@ -180,51 +186,45 @@ def render_page() -> None:
                 with bio_c2:
                     stocking_density_val = st.number_input("Stocking Density (fish/acre):", min_value=100.0, max_value=50000.0, value=5000.0, step=500.0)
 
-            st.markdown("##### Environmental Stress Telemetry (Mandatory for Advisory)")
-            env_c1, env_c2 = st.columns(2)
-            with env_c1:
-                do_val = st.number_input(
-                    "Morning DO (mg/L):",
-                    min_value=0.0,
-                    max_value=25.0,
-                    value=4.20,
-                    step=0.1,
-                    format="%.2f",
-                    help="Mandatory morning DO reading for feeding throttle logic.",
-                )
-                temp_val = st.number_input(
-                    "Water Temperature (°C):",
-                    min_value=10.0,
-                    max_value=45.0,
-                    value=28.0,
-                    step=0.5,
-                    format="%.1f",
-                    help="Water temperature. Heuristic stress triggers if < 20°C or > 34°C.",
-                )
-            with env_c2:
-                tan_enabled = st.checkbox("Include Total Ammonia (TAN, mg/L)", value=True)
-                tan_val = st.number_input(
-                    "TAN (mg/L):",
-                    min_value=0.0,
-                    max_value=20.0,
-                    value=0.50,
-                    step=0.05,
-                    disabled=not tan_enabled,
-                    help="test-kit graduation note: 2.0 mg/L TAN is a test-kit graduation mark, NOT a validated biological toxicity threshold.",
-                ) if tan_enabled else None
+        with c2:
+            do_val = st.number_input(
+                "Morning DO (mg/L):",
+                min_value=0.0,
+                max_value=25.0,
+                value=4.20,
+                step=0.1,
+                format="%.2f",
+            )
+            temp_val = st.number_input(
+                "Water Temperature (°C):",
+                min_value=10.0,
+                max_value=45.0,
+                value=28.0,
+                step=0.5,
+                format="%.1f",
+            )
+            tan_enabled = st.checkbox("Include Total Ammonia (TAN, mg/L)", value=True)
+            tan_val = st.number_input(
+                "TAN (mg/L):",
+                min_value=0.0,
+                max_value=20.0,
+                value=0.50,
+                step=0.05,
+                disabled=not tan_enabled,
+                help="2.0 mg/L TAN is a test-kit graduation mark, NOT a biological toxicity threshold.",
+            ) if tan_enabled else None
 
-                nh3_enabled = st.checkbox("Include Calculated Un-ionized NH3 (mg/L)", value=False)
-                nh3_val = st.number_input(
-                    "Molecular NH3 (mg/L):",
-                    min_value=0.0,
-                    max_value=5.0,
-                    value=0.03,
-                    step=0.01,
-                    disabled=not nh3_enabled,
-                    help="Calculated toxic un-ionized ammonia.",
-                ) if nh3_enabled else None
+            nh3_enabled = st.checkbox("Include Calculated Un-ionized NH3 (mg/L)", value=False)
+            nh3_val = st.number_input(
+                "Molecular NH3 (mg/L):",
+                min_value=0.0,
+                max_value=5.0,
+                value=0.03,
+                step=0.01,
+                disabled=not nh3_enabled,
+            ) if nh3_enabled else None
 
-        submitted = st.form_submit_button("Calculate Next-Visit Weight Benchmark & Generate Advisory", use_container_width=True)
+        submitted = st.form_submit_button("Run Growth & Feeding Analysis", use_container_width=True)
 
     # Defensive software bound validations
     val_errs = []
@@ -284,67 +284,8 @@ def render_page() -> None:
         st.error(f"Error evaluating feeding advisory: {exc}")
         return
 
-    # Section 3: Next-Visit Pond-Cohort Average Fish Weight Benchmark
-    st.markdown("---")
-    st.markdown("### 3. Next-Visit Pond-Cohort Average Fish Weight Benchmark")
-    st.markdown(
-        """
-        <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #f8fafc; border: 2px solid #0284c7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem;">
-            <div style="font-size: 0.8rem; text-transform: uppercase; color: #0284c7; font-weight: 700; letter-spacing: 0.05em;">
-                Operational Primary Baseline (Experiment 4)
-            </div>
-            <div style="font-size: 1.6rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
-                Persistence Baseline: Ŵ<sub>t+1</sub> = {pred_wt:.1f} g/fish
-            </div>
-            <div style="font-size: 0.88rem; color: #1e293b; font-weight: 500; margin-top: 0.25rem;">
-                Target: <strong>Next-visit pond-cohort average fish body weight</strong> (irregular 3–45 day revisit interval).
-            </div>
-            <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0d5c75; padding: 0.5rem 0.75rem; border-radius: 4px; margin-top: 0.75rem; font-size: 0.82rem; color: #0f172a; line-height: 1.45;">
-                <strong>MODEL PERFORMANCE DISCLOSURE:</strong> The reported <strong>MAE = 93.38 g</strong> belongs strictly to the all-pairs chronological persistence baseline (W<sub>t+1</sub> = W<sub>t</sub>).
-                Complex ML regressors failed significantly on commercial ponds (RF MAE = 112.15 g, GBDT MAE = 127.34 g, p < 10⁻¹²) because they assume continuous growth and cannot foresee unrecorded commercial partial harvests, net thinning, or cycle terminations.
-            </div>
-        </div>
-        """.format(pred_wt=res_weight.get("predicted_next_weight_g", current_weight_val)),
-        unsafe_allow_html=True,
-    )
-
-    wc1, wc2, wc3, wc4 = st.columns(4)
-    with wc1:
-        render_metric_card(
-            title="Current Observed Weight",
-            value=f"{current_weight_val:.1f} g",
-            subtitle="Observed Net Sampling",
-            benchmark_ref="Input Metric",
-        )
-    with wc2:
-        render_metric_card(
-            title="Predicted Next-Visit Weight",
-            value=f"{res_weight.get('predicted_next_weight_g', current_weight_val):.1f} g",
-            subtitle=f"At ~{revisit_days} Days Revisit",
-            benchmark_ref="Persistence Baseline",
-        )
-    with wc3:
-        render_metric_card(
-            title="Chronological Test MAE",
-            value="93.38 g",
-            subtitle="RMSE = 196.48 g (R² = 0.7135)",
-            benchmark_ref="Experiment 4 Benchmark",
-        )
-    with wc4:
-        render_metric_card(
-            title="Negative Scope",
-            value="NOT HARVEST YIELD",
-            subtitle="0% total yield labels in data",
-            benchmark_ref="Cohort Avg Weight Only",
-        )
-
-    # Plotly Chart
-    st.plotly_chart(render_weight_mae_chart(), use_container_width=True)
-
-    # Section 4: Provisional Rule-Based Feeding Advisory Engine
-    st.markdown("---")
-    st.markdown("### 4. Provisional Rule-Based Feeding Advisory Engine")
-    st.caption("Provisional decision-support heuristics requiring human verification. No automatic actuation is executed.")
+    # Section 2: Analysis Results (Compact SaaS Layout)
+    render_section_bar("Weight Benchmark & Provisional Feeding Advisory Results")
 
     advisory_action = res_feed.get("advisory_action", "UNKNOWN")
     rec_feed = res_feed.get("recommended_feed_kg")
@@ -353,89 +294,67 @@ def render_page() -> None:
     throttles = res_feed.get("throttling_factors", {})
     explanations = res_feed.get("advisory_explanations", [])
 
-    # Color badge based on action
-    if "CEASE" in advisory_action:
-        action_bg = "#fef2f2"
-        action_border = "#dc2626"
-        action_text = "#991b1b"
-    elif "SUBSTANTIAL" in advisory_action:
-        action_bg = "#fffbeb"
-        action_border = "#d97706"
-        action_text = "#92400e"
-    elif "MODERATE" in advisory_action:
-        action_bg = "#fefce8"
-        action_border = "#ca8a04"
-        action_text = "#854d0e"
-    else:
-        action_bg = "#f0fdf4"
-        action_border = "#16a34a"
-        action_text = "#166534"
-
-    st.markdown(
-        f"""
-        <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: {action_bg}; border: 2px solid {action_border}; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem;">
-            <div style="font-size: 0.8rem; text-transform: uppercase; color: {action_text}; font-weight: 700; letter-spacing: 0.05em;">
-                Provisional Feeding Recommendation (Decision-Support Only)
-            </div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: {action_text}; margin-top: 0.25rem;">
-                Advisory Action: {advisory_action.replace('_', ' ')} ({reduction_pct:.0f}% Reduction)
-            </div>
-            <div style="font-size: 0.95rem; color: #0f172a; font-weight: 500; margin-top: 0.5rem;">
-                • Baseline Calculated Feed: <strong>{base_feed:.1f} kg/day</strong><br>
-                • Recommended Adjusted Feed: <strong>{rec_feed:.1f} kg/day</strong>
-            </div>
-            <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 0.5rem 0.75rem; border-radius: 4px; margin-top: 0.75rem; font-size: 0.8rem; color: #991b1b;">
-                <strong>CAUSALITY & VERIFICATION DISCLAIMER:</strong> Feed reductions mitigate post-prandial oxygen consumption and organic nitrogen loading,
-                but <strong>do NOT cause immediate water quality recovery</strong> or cure hypoxia. All feeding adjustments are provisional decision-support heuristics requiring human verification.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    fc1, fc2, fc3 = st.columns(3)
-    with fc1:
+    wc1, wc2, wc3, wc4 = st.columns(4)
+    with wc1:
         render_metric_card(
-            title="DO Throttle Factor",
-            value=f"{throttles.get('do_multiplier', 1.0) * 100:.0f}%",
-            subtitle=throttles.get("do_status", "N/A").replace("_", " "),
-            benchmark_ref="Hypoxia Protection",
+            title="Next-Visit Cohort Weight",
+            value=f"{res_weight.get('predicted_next_weight_g', current_weight_val):.1f} g",
+            subtitle=f"Persistence Benchmark (~{revisit_days}d)",
+            benchmark_ref="Persistence Baseline (93.38 g MAE)",
+            icon="⚖️",
+            accent="aqua",
         )
-    with fc2:
+    with wc2:
         render_metric_card(
-            title="Ammonia Throttle Factor",
-            value=f"{throttles.get('ammonia_multiplier', 1.0) * 100:.0f}%",
-            subtitle=throttles.get("ammonia_status", "N/A").replace("_", " "),
-            benchmark_ref="Toxicity Mitigation",
+            title="Recommended Feed",
+            value=f"{rec_feed:.1f} kg/day" if rec_feed is not None else "N/A",
+            subtitle=f"{advisory_action.replace('_', ' ')} ({reduction_pct:.0f}% cut)",
+            benchmark_ref=f"Baseline: {base_feed:.1f} kg/day" if base_feed is not None else "",
+            icon="🍽️",
+            accent="warning" if reduction_pct > 0 else "success",
         )
-    with fc3:
+    with wc3:
         render_metric_card(
-            title="Temperature Throttle",
-            value=f"{throttles.get('temperature_multiplier', 1.0) * 100:.0f}%",
-            subtitle=f"At {temp_val:.1f} °C",
-            benchmark_ref="Thermal Stress Check",
+            title="DO / Ammonia Throttles",
+            value=f"{throttles.get('do_multiplier', 1.0)*100:.0f}% / {throttles.get('ammonia_multiplier', 1.0)*100:.0f}%",
+            subtitle=f"Temp: {throttles.get('temperature_multiplier', 1.0)*100:.0f}% ({temp_val:.1f} °C)",
+            benchmark_ref="Provisional Heuristic",
+            icon="🎚️",
+            accent="teal",
+        )
+    with wc4:
+        render_metric_card(
+            title="Scope Boundary",
+            value="Cohort Avg Only",
+            subtitle="NOT harvest biomass / kg/ha",
+            benchmark_ref="0% total yield labels",
         )
 
-    st.markdown("#### Step-by-Step Heuristic Explanations")
-    for exp in explanations:
-        st.markdown(f"- {exp}")
+    # Expandable Technical Details & Governance
+    with st.expander("Technical Details, Negative Scope & Heuristic Explanations", expanded=False):
+        st.markdown(
+            """
+            - **Target Definition:** Strictly **next-visit pond-cohort average fish weight** (`Ŵ_{t+1} = W_t` persistence baseline).
+            - **Negative Scope:** **NOT individual fish growth**, **NOT harvest biomass**, and **NOT total commercial yield in kg/ha** (0% total harvest yield labels).
+            - **Benchmark Performance:** All-pairs persistence MAE = **93.38 g** (RMSE = 196.48 g, R² = 0.7135), outperforming RF (112.15 g) and GBDT (127.34 g).
+            - **Provisional Feeding Recommendation:** These are provisional decision-support heuristics requiring human verification (`is_automatic_control = False`). Feed reductions mitigate organic waste loading but do NOT cause immediate water quality recovery or cure hypoxia.
+            - **TAN Note:** 2.0 mg/L TAN represents a standard chemical test-kit graduation mark, NOT a validated biological toxicity threshold.
+            """
+        )
+        for exp in explanations:
+            st.markdown(f"- {exp}")
+        st.plotly_chart(render_weight_mae_chart(), use_container_width=True)
 
-    st.caption(
-        "Note on Ammonia Throttling: If TAN is reported, 2.0 mg/L TAN represents a standard chemical test-kit graduation mark, NOT a validated biological toxicity threshold."
-    )
-
-    # Section 5: Observational Feeding Feedback Tracker (Field Compliance Form)
-    st.markdown("---")
-    st.markdown("### 5. Observational Feeding Feedback Tracker")
-    st.caption("Record actual feed dispensed and compliance notes for retrospective observational audit.")
-
-    with st.expander("Record Field Observation & Compliance Feedback", expanded=False):
+    # Section 3: Observational Feeding Feedback Tracker
+    # This feedback tracker is strictly an observational audit record and does
+    # NOT execute reinforcement learning, causal learning, or parameter updates.
+    with st.expander("Observational Feeding Feedback Log", expanded=False):
         with st.form("feedback_form"):
             fb_c1, fb_c2 = st.columns(2)
             with fb_c1:
-                pond_id = st.text_input("Pond Identifier:", value="POND-01")
+                pond_id = st.text_input("Pond Identifier:", value=default_pond_id)
                 actual_feed = st.number_input(
-                    "Actual Feed Dispensed by Farmer (kg):",
+                    "Actual Feed Dispensed (kg):",
                     min_value=0.0,
                     max_value=2000.0,
                     value=float(rec_feed if rec_feed is not None else 25.0),
@@ -444,9 +363,8 @@ def render_page() -> None:
             with fb_c2:
                 notes = st.text_area(
                     "Field Notes / Deviation Reasons:",
-                    placeholder="e.g. Farmer reduced feed by 50% following visible surface air gulping.",
+                    placeholder="e.g. Reduced feed 50% following morning observation.",
                 )
-
             fb_submitted = st.form_submit_button("Log Observational Compliance Feedback")
             if fb_submitted:
                 record_res = registry.record_feeding_feedback(
@@ -455,20 +373,8 @@ def render_page() -> None:
                     actual_feed_kg=float(actual_feed),
                     notes=notes,
                 )
-                st.success(
-                    f"Feedback successfully logged for pond `{pond_id}`. "
-                    f"Compliance status: `{record_res.get('compliance_status')}`."
-                )
-
-        st.markdown(
-            """
-            <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.78rem; color: #1e293b; font-weight: 500; margin-top: 0.5rem;">
-                <strong>Scientific Governance Notice:</strong> The feedback tracker is strictly an observational audit record for retrospective human review.
-                It does <strong>NOT execute reinforcement learning, online retraining, or automatic parameter tuning</strong>.
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                st.success(f"Feedback logged for `{pond_id}`. Status: `{record_res.get('compliance_status')}`.")
+        st.caption("Observational audit log only; executes zero reinforcement learning or online retraining.")
 
 
 if __name__ == "__main__" or "streamlit" in __name__:

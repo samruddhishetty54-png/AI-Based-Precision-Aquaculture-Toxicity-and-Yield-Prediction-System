@@ -1,8 +1,8 @@
 """AI-Based Precision Aquaculture Decision-Support System.
 
 Main Application Launcher (Phase 5 Dashboard).
-Coordinates multi-page navigation, operational categorization, and system-level
-governance disclaimers across all 7 dashboard modules.
+Coordinates multi-page navigation, Deep Ocean + Emerald Aqua styling,
+and system-level governance disclaimers across all 9 dashboard modules.
 """
 
 import sys
@@ -27,84 +27,97 @@ st.set_page_config(
 # Inject Global Aesthetic Styling
 inject_custom_css()
 
-# Define Navigation Structure Using Categorized Sections
+# Top-of-sidebar Precision AquaDSS Logo
+logo_path = repo_root / "app" / "dashboard" / "assets" / "logo.svg"
+if logo_path.exists():
+    st.logo(str(logo_path), size="large")
+
+# Define Navigation Structure Using Organization-Facing Categories (9 Pages)
 pages = {
-    "Operational Monitoring": [
+    "Farm & Monitoring": [
         st.Page(
-            "app/dashboard/pages/01_Overview.py",
-            title="Pond Monitoring Overview",
-            icon="🏠",
+            "app/dashboard/pages/08_Farm_Overview.py",
+            title="Organization Overview",
+            icon=":material/home:",
             default=True,
         ),
         st.Page(
+            "app/dashboard/pages/01_Overview.py",
+            title="Pond Monitoring",
+            icon=":material/dashboard:",
+        ),
+    ],
+    "Data Management": [
+        st.Page(
+            "app/dashboard/pages/09_Import_Dataset.py",
+            title="Upload New Dataset",
+            icon=":material/upload_file:",
+        ),
+    ],
+    "Water Quality & Risk": [
+        st.Page(
             "app/dashboard/pages/02_Water_Quality_Toxicity.py",
-            title="Water Quality & Toxicity Screening",
-            icon="🧪",
+            title="Water Quality & Toxicity Risk",
+            icon=":material/science:",
         ),
         st.Page(
             "app/dashboard/pages/03_Next_Visit_DO_Hypoxia.py",
-            title="Next-Visit Morning DO & Hypoxia",
-            icon="🫁",
+            title="DO & Hypoxia Screening",
+            icon=":material/air:",
         ),
+    ],
+    "Growth & Feeding": [
         st.Page(
             "app/dashboard/pages/04_Growth_Feeding_Advisor.py",
-            title="Fish Weight & Feeding Advisory",
-            icon="🐟",
+            title="Fish Growth & Feeding Advisor",
+            icon=":material/scale:",
         ),
+    ],
+    "Analytics": [
         st.Page(
             "app/dashboard/pages/05_Historical_Data_Explorer.py",
-            title="Historical Observations Explorer",
-            icon="📈",
+            title="Prediction History & Reports",
+            icon=":material/analytics:",
         ),
-    ],
-    "Simulation & Sandbox": [
         st.Page(
             "app/dashboard/pages/06_Simulation_Sandbox.py",
-            title="Simulated Scenarios Sandbox",
-            icon="🔬",
+            title="Simulation Mode",
+            icon=":material/biotech:",
         ),
     ],
-    "System Governance": [
+    "System": [
         st.Page(
             "app/dashboard/pages/07_Model_Registry_Governance.py",
-            title="Governance & Benchmark Catalog",
-            icon="🛡️",
+            title="Model Information",
+            icon=":material/verified_user:",
         ),
     ],
 }
-
-# Render Sidebar Branding & Disclaimers
-with st.sidebar:
-    st.markdown(
-        """
-        <div style="padding: 0.5rem 0 1rem 0; border-bottom: 1px solid #cbd5e1; margin-bottom: 1rem;">
-            <div style="font-size: 1.15rem; font-weight: 800; color: #0c2340;">
-                🐟 Precision AquaDSS
-            </div>
-            <div style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-top: 0.15rem;">
-                Toxicity & Yield Decision Support (BAI507P)
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 # Execute Multi-Page Navigation
 nav = st.navigation(pages)
 nav.run()
 
-# Sidebar Footer Disclaimers
+# Sidebar Footer: Project Branding & System Safeguards on Deep Ocean Navy
 with st.sidebar:
-    st.markdown("---")
     st.markdown(
         """
-        <div style="font-size: 0.75rem; color: #1e293b; line-height: 1.45; font-weight: 500;">
-            <strong style="color: #0c2340;">System Safeguards:</strong><br>
-            • Decision-support only (<code>is_automatic_control = False</code>)<br>
-            • Sampling interval: 3–45 days (routine visits)<br>
-            • Morning observations: 06:00–08:30 AM<br>
-            • No continuous real-time or overnight minimum DO claims<br>
-            • Read-only models • No runtime retraining
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(220, 233, 230, 0.18);">
+            <div style="background: linear-gradient(135deg, #087F72 0%, #0E5859 100%); border: 1px solid rgba(67, 191, 192, 0.35); border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.6rem;">
+                <div style="font-size: 0.95rem; font-weight: 800; color: #FFFFFF !important; letter-spacing: -0.01em;">
+                    🐟 Precision AquaDSS
+                </div>
+                <div style="font-size: 0.71rem; font-weight: 500; color: #D7F3F0 !important; margin-top: 0.1rem;">
+                    Aquaculture AI Decision Support
+                </div>
+            </div>
+            <div style="background-color: rgba(255, 255, 255, 0.06); border: 1px solid rgba(220, 233, 230, 0.15); border-radius: 8px; padding: 0.6rem 0.75rem; font-size: 0.71rem; color: #D5E4E3 !important; line-height: 1.45; font-weight: 500;">
+                <span style="color: #43BFC0 !important; font-weight: 700; display: block; margin-bottom: 0.25rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;">System Safeguards</span>
+                • Decision-support only (is_automatic_control = False)<br>
+                • Routine visits: 3–45 days (06:00–08:30 AM)<br>
+                • No live IoT or overnight DO claims<br>
+                • Read-only models • No runtime retraining
+            </div>
         </div>
         """,
         unsafe_allow_html=True,

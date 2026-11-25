@@ -22,10 +22,11 @@ from app.dashboard.utils.helpers import (
     format_percentage,
     get_registry_health_summary,
 )
-from app.dashboard.components.header import render_page_header
+from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.banners import (
     render_decision_support_banner,
     render_multi_week_observation_banner,
+    render_uploaded_context_notice,
 )
 from app.dashboard.components.registry_status import render_registry_status_bar
 from app.dashboard.components.metric_card import render_metric_card
@@ -51,28 +52,17 @@ def render_page() -> None:
     """Render the Pond Monitoring Overview & Model Status page."""
     inject_custom_css()
 
+    # ── Header & Banners ──────────────────────────────────────────────
     render_page_header(
         title="Pond Monitoring Overview & Model Status",
-        subtitle="Executive multi-pond commercial farm overview and central model registry health.",
+        subtitle="Multi-pond inspection priority queue and model readiness summary.",
         category_key="HISTORICAL",
     )
 
-    render_decision_support_banner()
-    render_multi_week_observation_banner()
+    render_uploaded_context_notice(["do_mg_l", "ph", "temp_c", "emerson_nh3_mg_l"])
 
-    # Section 1: Model Registry Health & Operational Status
-    st.markdown("### 1. Central Model Registry Health & Governance")
-    st.caption("Cryptographically verified, read-only analytical baselines and experimental screening pipelines.")
-
-    registry = get_model_registry()
-    render_registry_status_bar(registry)
-
-    # Section 2: Executive Farm Field KPI Summary
-    st.markdown("### 2. Commercial Farm Field Monitoring Summary")
-    st.caption(
-        "Historical observations aggregated from commercial pond inspection logs. "
-        "Strictly reflects discrete morning visits (06:00–08:30 AM); NOT live or continuous streaming telemetry."
-    )
+    # ── KPI Metric Cards ─────────────────────────────────────────────
+    st.markdown("#### Farm Field Monitoring Summary")
 
     try:
         df_enrolled = load_dataset("enrolled_ponds")
@@ -101,6 +91,8 @@ def render_page() -> None:
             value=f"{enrolled_count} Ponds",
             subtitle="Registered farm profiles",
             benchmark_ref="enrolled_ponds_v2.csv",
+            icon="🐟",
+            accent="teal",
         )
     with kpi2:
         render_metric_card(
@@ -108,25 +100,30 @@ def render_page() -> None:
             value=f"{total_inspections:,} Records",
             subtitle="Historical routine inspections",
             benchmark_ref="3–45 Day Intervals",
+            icon="📋",
+            accent="aqua",
         )
     with kpi3:
         render_metric_card(
             title="Median Morning DO",
             value=f"{median_do:.2f} mg/L",
             subtitle=f"Median pH: {median_ph:.2f} | Temp: {median_temp:.1f} °C",
-            benchmark_ref="Exp 5 Benchmark: 3.50 mg/L",
+            benchmark_ref="Historical Mean: 3.50 mg/L",
+            icon="💧",
+            accent="success",
         )
     with kpi4:
         render_metric_card(
             title="Median Cohort Weight",
             value=f"{median_weight:.1f} g/fish",
             subtitle="Somatic avg per fish (NOT harvest yield)",
-            benchmark_ref="Exp 4 Persistence Target",
+            benchmark_ref="Persistence Target",
+            icon="⚖️",
+            accent="aqua",
         )
 
-    # Section 3: Field Inspection Priority Queue
-    st.markdown("---")
-    st.markdown("### 3. Historical Field Inspection Priority Queue")
+    # ── Inspection Priority Queue ─────────────────────────────────────
+    render_section_bar("Inspection Priority Queue")
     st.caption(
         "Commercial ponds ranked by latest historical morning DO and estimated ammonia toxicity tier. "
         "Allows farm supervisors to plan physical inspection rounds. All records show actual historical observation dates."
@@ -147,7 +144,7 @@ def render_page() -> None:
             ascending=[True, True],
         )
 
-        # Filters
+        # Filters Toolbar
         f_col1, f_col2 = st.columns(2)
         with f_col1:
             tier_filter = st.selectbox(
@@ -156,7 +153,7 @@ def render_page() -> None:
                 index=0,
             )
         with f_col2:
-            search_pond = st.text_input("Search Pond Identifier:", value="")
+            search_pond = st.text_input("Search Pond Identifier:", value="", placeholder="e.g. POND-012")
 
         filtered_queue = df_queue.copy()
         if "Priority 1 Only" in tier_filter:
@@ -206,23 +203,47 @@ def render_page() -> None:
     except Exception as exc:
         st.error(f"Error rendering inspection priority queue: {exc}")
 
-    # Section 4: Architecture Governance & Operational Limits
-    st.markdown("---")
-    st.markdown("### 4. Scientific Architecture & Operational Boundaries")
-    st.markdown(
-        """
-        <div style="box-sizing: border-box; width: 100%; max-width: 100%; overflow-wrap: break-word; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 1rem 1.25rem; font-size: 0.88rem; color: #0f172a; line-height: 1.5;">
-            <strong>MANDATORY SYSTEM GOVERNANCE NOTICE:</strong>
-            <ul>
-                <li><strong>No Real-Time Monitoring:</strong> The system does NOT connect to active live IoT sensors or stream real-time measurements. All displayed parameters represent discrete historical inspection visits.</li>
-                <li><strong>Sampling Protocol:</strong> Observations reflect standard morning visits (<strong>06:00–08:30 AM</strong>) scheduled <strong>3 to 45 days apart (median ~21 days)</strong>. They are NOT verified pre-dawn daily minimum DO readings.</li>
-                <li><strong>Negative Scope:</strong> Somatic average body weight per fish is tracked; commercial harvest yield in kg/ha or total pond biomass is strictly unsupported (0% total yield labels in dataset).</li>
-                <li><strong>Zero Automated Actuation:</strong> All model outputs and rule-based feeding adjustments are provisional decision-support aids requiring qualified human verification. No automated control commands (aerators, feeders, pumps) are executed (<code>is_automatic_control = False</code>).</li>
-            </ul>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # ── Expanders: Technical Details ──────────────────────────────────
+
+    with st.expander("Central Model Registry Health & Governance", expanded=False):
+        st.caption("Cryptographically verified, read-only analytical baselines and experimental screening pipelines.")
+        registry = get_model_registry()
+        render_registry_status_bar(registry)
+
+    with st.expander("System Governance & Operational Boundaries", expanded=False):
+        st.caption(
+            "Historical observations aggregated from commercial pond inspection logs. "
+            "Strictly reflects discrete morning visits (06:00–08:30 AM); NOT live or continuous streaming telemetry."
+        )
+        import textwrap
+        st.markdown(
+            textwrap.dedent("""
+            <div class="saas-card" style="line-height: 1.55; font-size: 0.86rem; color: #1e293b;">
+                <div style="font-weight: 800; font-size: 0.88rem; color: #0c2340; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+                    Mandatory System Governance Notice
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem;">
+                        <strong style="color: #0c2340;">No Real-Time Monitoring:</strong><br>
+                        The system does NOT connect to active live IoT sensors or stream real-time measurements. All displayed parameters represent discrete historical inspection visits.
+                    </div>
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem;">
+                        <strong style="color: #0c2340;">Sampling Protocol:</strong><br>
+                        Observations reflect standard morning visits (<strong>06:00–08:30 AM</strong>) scheduled <strong>3 to 45 days</strong> apart (median ~21 days). They are NOT verified pre-dawn daily minimum DO readings.
+                    </div>
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem;">
+                        <strong style="color: #0c2340;">Negative Scope:</strong><br>
+                        Somatic average body weight per fish is tracked; commercial harvest yield in kg/ha or total pond biomass is strictly unsupported (<strong>NOT harvest yield</strong>, <strong>0% total yield labels</strong> in dataset).
+                    </div>
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem;">
+                        <strong style="color: #0c2340;">Zero Automated Actuation:</strong><br>
+                        All model outputs and rule-based feeding adjustments are provisional decision-support aids requiring qualified human verification. No automated control commands (aerators, feeders, pumps) are executed (<code>is_automatic_control = False</code>).
+                    </div>
+                </div>
+            </div>
+            """).strip(),
+            unsafe_allow_html=True,
+        )
 
 
 if __name__ == "__main__" or "streamlit" in __name__:
