@@ -798,3 +798,74 @@ def run_batch_analysis(
         "executed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     return results_df, summary
+
+
+def detect_and_map_columns(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """Automatically detect and map columns from raw DataFrame using canonical aliases."""
+    mapping, ambiguities = suggest_column_mapping(list(df.columns))
+    mapped_df = df.copy()
+    rename_dict = {}
+    for canon, col in mapping.items():
+        if col and col in df.columns and col != canon:
+            rename_dict[col] = canon
+    if rename_dict:
+        mapped_df = mapped_df.rename(columns=rename_dict)
+
+    report = {
+        "mapping": mapping,
+        "ambiguities": ambiguities,
+        "renamed": rename_dict,
+    }
+    return mapped_df, report
+
+
+def validate_mapped_dataframe(df: pd.DataFrame) -> Dict[str, Any]:
+    """Validate a mapped DataFrame against required aquaculture fields."""
+    missing_required = []
+    has_id = "pond_id" in df.columns or "tank_id" in df.columns
+    if not has_id:
+        missing_required.append("pond_id (or tank_id)")
+    if "dissolved_oxygen_mg_l" not in df.columns:
+        missing_required.append("dissolved_oxygen_mg_l")
+    if "ph" not in df.columns:
+        missing_required.append("ph")
+    if "temp_c" not in df.columns:
+        missing_required.append("temp_c")
+
+    is_valid = len(missing_required) == 0
+    return {
+        "is_valid": is_valid,
+        "missing_required": missing_required,
+        "row_count": len(df),
+        "columns_present": list(df.columns),
+    }
+
+
+def save_uploaded_dataset_to_session(filename: str, raw_df: pd.DataFrame, mapped_df: pd.DataFrame, validation_results: Dict[str, Any]) -> None:
+    """Save validated dataset to session state for cross-page analysis."""
+    import streamlit as st
+    pond_col = "pond_id" if "pond_id" in mapped_df.columns else ("tank_id" if "tank_id" in mapped_df.columns else None)
+    pond_ids = sorted(mapped_df[pond_col].dropna().astype(str).unique().tolist()) if pond_col else []
+
+    st.session_state["uploaded_analysis_state"] = {
+        "filename": filename,
+        "raw_df": raw_df,
+        "work_df": mapped_df,
+        "total_rows": len(mapped_df),
+        "pond_count": len(pond_ids),
+        "pond_ids": pond_ids,
+        "is_valid": True,
+        "loaded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    if pond_ids:
+        st.session_state["selected_pond"] = pond_ids[0]
+        st.session_state["active_container_id"] = pond_ids[0]
+
+
+def generate_validation_report_markdown(val_res: Dict[str, Any]) -> str:
+    """Generate Markdown report for validation outcome."""
+    if val_res.get("is_valid"):
+        return f"**Validation Passed:** {val_res.get('row_count', 0)} rows successfully verified."
+    missing = ", ".join(val_res.get("missing_required", []))
+    return f"**Validation Blocked:** Missing required water quality fields: `{missing}`."
+

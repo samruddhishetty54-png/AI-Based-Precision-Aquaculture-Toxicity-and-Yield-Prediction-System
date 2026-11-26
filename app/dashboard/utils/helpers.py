@@ -182,15 +182,16 @@ def get_active_farm_type() -> str:
     """Return the currently selected farm type from session state."""
     try:
         import streamlit as st
-        return st.session_state.get("farm_type", DEFAULT_FARM_TYPE)
+        val = st.session_state.get("active_farm_type") or st.session_state.get("farm_type")
+        return val if val else DEFAULT_FARM_TYPE
     except Exception:
         return DEFAULT_FARM_TYPE
 
 
 def get_container_label(farm_type: Optional[str] = None) -> str:
-    """Return 'Tank / System' for indoor aquaculture or 'Pond' for outdoor."""
+    """Return 'Tank' for indoor aquaculture or 'Pond' for outdoor."""
     f_type = farm_type or get_active_farm_type()
-    return "Tank / System" if "indoor" in f_type.lower() else "Pond"
+    return "Tank" if "indoor" in f_type.lower() else "Pond"
 
 
 def get_container_id_label(farm_type: Optional[str] = None) -> str:

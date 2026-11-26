@@ -100,6 +100,7 @@ def render_page() -> None:
             key="farm_mgmt_env_radio",
         )
         if new_env != current_farm_type:
+            st.session_state["farm_type"] = new_env
             st.session_state["active_farm_type"] = new_env
             st.rerun()
 
