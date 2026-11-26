@@ -1,13 +1,19 @@
-"""Page 8: Organization Overview (Default Landing Page).
+"""Page 2: Farm Management – Precision AquaDSS.
 
-Commercial SaaS executive landing page for Precision AquaDSS:
-- Clean Organization Overview header and compact KPI summary
-- Clickable Quick Action cards with icons
-- Water-quality trend charts, toxicity risk overview, pond comparison, and fish growth trends
-- Recent observations table and recent session prediction activity
-- Lengthy scientific explanations moved into collapsed expanders
+Operational Category: HISTORICAL & CONFIGURATION (Multi-Environment Farm & Container Management).
+Supports:
+1. Indoor and Outdoor Aquaculture Environment Switching & Profile Context.
+2. Interactive Registration: Add new farms, add ponds/tanks, view existing inventory.
+3. Active Container Selection: Pick a specific pond or tank for global session analysis.
+4. Indoor vs Outdoor specific tracking:
+   - Indoor: Tanks, tank identification, water quality (pH, temp, ammonia, DO), feeding records, fish growth observations.
+   - Outdoor: Ponds, pond identification, water quality (pH, temp, ammonia, DO), weather context, feeding records, fish growth observations.
+5. Integrated CSV Dataset Upload with automatic field mapping (supporting tank_id / pond_id).
+6. 100% Free Platform: Zero subscription or tier restrictions.
 """
 
+from typing import Dict, Any, List, Optional
+import datetime
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -24,6 +30,12 @@ from app.dashboard.utils.helpers import (
     FREE_PLATFORM_NOTICE,
 )
 from app.dashboard.utils.styles import PALETTE, inject_custom_css
+from app.dashboard.utils.upload_processor import (
+    detect_and_map_columns,
+    validate_mapped_dataframe,
+    save_uploaded_dataset_to_session,
+    generate_validation_report_markdown,
+)
 
 
 def _classify_nh3_tier(nh3_val: float) -> str:
@@ -40,27 +52,26 @@ def _classify_nh3_tier(nh3_val: float) -> str:
 
 
 def render_page() -> None:
-    """Render the Organization Overview landing page."""
+    """Render the Farm Management page."""
     inject_custom_css()
 
-    farm_type = get_active_farm_type()
-    container_label = get_container_label(farm_type)
-    container_id_label = get_container_id_label(farm_type)
+    current_farm_type = get_active_farm_type()
+    container_label = get_container_label(current_farm_type)
+    container_id_label = get_container_id_label(current_farm_type)
 
     render_page_header(
-        title="Organization Overview",
-        subtitle=f"{farm_type} water-quality analytics, toxicity risk screening, and decision-support workspace.",
+        title="Farm Management",
+        subtitle=f"Register and manage {current_farm_type.lower()} facilities, {container_label.lower()}s, and observation datasets.",
         category_key="HISTORICAL",
     )
 
-    # 100% Free Platform & Farm Type Mode Banner
-    farm_disclaimer = get_farm_type_disclaimer(farm_type)
+    # ── Farm Environment Selector & 100% Free Platform Banner ─────────
     st.markdown(
         f"""
         <div style="background-color: #FFFFFF; border: 1px solid #DCE9E6; border-left: 4px solid #087F72; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.9rem; box-shadow: 0 1px 4px rgba(16,44,58,0.03);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.35rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-weight: 800; font-size: 0.85rem; color: #173747;">🏢 Mode: {farm_type}</span>
+                    <span style="font-weight: 800; font-size: 0.85rem; color: #173747;">🏢 Farm Environment: {current_farm_type}</span>
                     <span style="background-color: #E3F6EE; color: #269B72; border: 1px solid #A6DEC8; font-size: 0.70rem; font-weight: 700; padding: 0.12rem 0.5rem; border-radius: 9999px;">
                         100% FREE ACCESS
                     </span>
@@ -71,386 +82,312 @@ def render_page() -> None:
             </div>
             <div style="font-size: 0.78rem; color: #526873; line-height: 1.45;">
                 <strong>Platform Notice:</strong> {FREE_PLATFORM_NOTICE}<br>
-                <span style="color: #64748b;"><strong>Scientific Context:</strong> {farm_disclaimer}</span>
+                <span style="color: #64748b;"><strong>Scientific Boundary:</strong> {get_farm_type_disclaimer(current_farm_type)}</span>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Load Historical Datasets
+    # Environment Selection Controls
+    env_col1, env_col2 = st.columns([1.2, 2.8])
+    with env_col1:
+        new_env = st.radio(
+            "Select Farm Environment:",
+            options=["Outdoor Aquaculture", "Indoor Aquaculture"],
+            index=0 if current_farm_type == "Outdoor Aquaculture" else 1,
+            horizontal=True,
+            key="farm_mgmt_env_radio",
+        )
+        if new_env != current_farm_type:
+            st.session_state["active_farm_type"] = new_env
+            st.rerun()
+
+    with env_col2:
+        if new_env == "Indoor Aquaculture":
+            st.info(
+                "🏢 **Indoor Aquaculture Mode Selected:** Configured for closed fish tanks, recirculating systems (RAS), "
+                "or indoor hatcheries. Tracks tank IDs, water quality (pH, temp, NH₃, DO), feeding logs, and fish growth. "
+                "Note: Standard water quality models apply; environmental variables are not assumed to be strictly uniform."
+            )
+        else:
+            st.info(
+                "🌊 **Outdoor Aquaculture Mode Selected:** Configured for open earthen ponds and commercial culture ponds. "
+                "Tracks pond IDs, water quality (pH, temp, NH₃, DO), ambient weather conditions when recorded, feeding logs, and fish growth."
+            )
+
+    # ── Load Historical Data ──────────────────────────────────────────
     try:
         df_tox = load_dataset("toxicity_analysis")
         df_enrolled = load_dataset("enrolled_ponds")
         df_growth = load_dataset("fish_health_growth")
+        df_feeding = load_dataset("feeding_analysis")
     except Exception as exc:
-        st.error(f"Failed to load historical datasets: {exc}")
+        st.error(f"Failed to load datasets: {exc}")
         return
 
     df_tox["datetime_dt"] = pd.to_datetime(df_tox["datetime"], errors="coerce")
 
-    # Compact Filters Bar
-    regions = sorted(df_tox["region"].dropna().astype(str).unique().tolist())
-    sel_col1, sel_col2, sel_col3 = st.columns([1, 1, 1])
-    with sel_col1:
-        selected_region = st.selectbox(
-            "Region Scope",
-            options=["All Regions"] + regions,
-            index=0,
-            key="farm_overview_region",
-        )
+    # Initialize Session State Registries if missing
+    if "registered_farms" not in st.session_state:
+        st.session_state["registered_farms"] = [
+            {"farm_id": "FARM-NORTH", "name": "Northern Aqua Cluster", "environment": "Outdoor Aquaculture", "region": "North Delta", "container_count": 48},
+            {"farm_id": "FARM-SOUTH", "name": "Southern River Valley", "environment": "Outdoor Aquaculture", "region": "South Delta", "container_count": 62},
+            {"farm_id": "FARM-INDOOR-01", "name": "Precision RAS Facility A", "environment": "Indoor Aquaculture", "region": "Central Hub", "container_count": 24},
+        ]
+    if "registered_ponds" not in st.session_state:
+        st.session_state["registered_ponds"] = []
 
-    df_scoped = df_tox if selected_region == "All Regions" else df_tox[df_tox["region"].astype(str) == selected_region]
-    ponds_in_scope = sorted(df_scoped["pond_id"].dropna().astype(str).unique().tolist())
-
-    with sel_col2:
-        selected_pond = st.selectbox(
-            f"{container_id_label}",
-            options=[f"All {container_label}s in Scope"] + ponds_in_scope,
-            index=0,
-            key="farm_overview_pond",
-        )
-
-    valid_dates = df_scoped["datetime_dt"].dropna()
-    with sel_col3:
-        if not valid_dates.empty:
-            min_d = valid_dates.min().date()
-            max_d = valid_dates.max().date()
-            date_range = st.date_input(
-                "Observation Date Range",
-                value=(min_d, max_d),
-                min_value=min_d,
-                max_value=max_d,
-                key="farm_overview_date_range",
-            )
-        else:
-            date_range = None
-
-    all_in_scope_label = f"All {container_label}s in Scope"
-    if selected_pond != all_in_scope_label:
-        df_view = df_scoped[df_scoped["pond_id"].astype(str) == selected_pond]
-        df_growth_view = df_growth[df_growth["pond_id"].astype(str) == selected_pond]
-    else:
-        df_view = df_scoped
-        if selected_region != "All Regions":
-            pond_set = set(ponds_in_scope)
-            df_growth_view = df_growth[df_growth["pond_id"].astype(str).isin(pond_set)]
-        else:
-            df_growth_view = df_growth
-
-    if isinstance(date_range, (tuple, list)) and len(date_range) == 2:
-        start_d, end_d = pd.Timestamp(date_range[0]), pd.Timestamp(date_range[1]) + pd.Timedelta(days=1)
-        df_view = df_view[(df_view["datetime_dt"] >= start_d) & (df_view["datetime_dt"] < end_d)]
-        if "datetime" in df_growth_view.columns:
-            g_dt = pd.to_datetime(df_growth_view["datetime"], errors="coerce")
-            df_growth_view = df_growth_view[(g_dt >= start_d) & (g_dt < end_d)]
-
-    # Active Session Upload Notice (compact)
-    uploaded_state = st.session_state.get("uploaded_analysis_state")
-    if uploaded_state and uploaded_state.get("is_valid"):
-        st.info(
-            f"Active session CSV: **{uploaded_state.get('filename')}** "
-            f"({uploaded_state.get('total_rows', 0):,} rows, {uploaded_state.get('pond_count', 0)} {container_label.lower()}(s)) — "
-            "kept separate from historical records."
-        )
-
-    # 4 Executive KPI Cards
-    latest_dt = df_view["datetime_dt"].max()
-    latest_date_str = latest_dt.strftime("%Y-%m-%d") if pd.notna(latest_dt) else "N/A"
-    total_ponds_represented = df_view["pond_id"].nunique()
-    total_enrolled = (
-        df_enrolled[df_enrolled["region"].astype(str) == selected_region]["pond_id"].nunique()
-        if selected_region != "All Regions"
-        else df_enrolled["pond_id"].nunique()
-    )
-    median_do = df_view["dissolved_oxygen_mg_l"].median()
-    median_ph = df_view["ph"].median()
-    median_temp = df_view["temp_c"].median()
-    median_nh3 = df_view["primary_calculated_nh3_mg_l"].median()
-
-    k1, k2, k3, k4 = st.columns(4)
-    with k1:
-        render_metric_card(
-            title=f"{container_label}s Monitored",
-            value=f"{total_ponds_represented}",
-            subtitle=f"{total_enrolled} enrolled | {df_view['region'].nunique()} region(s)",
-            benchmark_ref=f"Verified {container_label} IDs",
-            icon="🐟",
-            accent="teal",
-        )
-    with k2:
-        render_metric_card(
-            title="Latest Observation",
-            value=latest_date_str,
-            subtitle=f"{len(df_view):,} routine visit records",
-            benchmark_ref="06:00–08:30 AM Logs",
-            icon="📅",
-            accent="aqua",
-        )
-    with k3:
-        render_metric_card(
-            title="Median Morning DO",
-            value=format_float(median_do, 2, "mg/L"),
-            subtitle=f"pH {format_float(median_ph, 2)} | Temp {format_float(median_temp, 1, '°C')}",
-            benchmark_ref="Historical Mean: 3.50 mg/L",
-            icon="💧",
-            accent="success",
-        )
-    with k4:
-        render_metric_card(
-            title="Median NH3 & Weight",
-            value=format_float(median_nh3, 4, "mg/L"),
-            subtitle=(
-                f"Cohort Weight: {format_float(df_growth_view['average_fish_weight_g'].median(), 1, 'g/fish')}"
-                if not df_growth_view.empty
-                else "No weight records in scope"
-            ),
-            benchmark_ref="Emerson Chemistry",
-            icon="🧪",
-            accent="aqua",
-        )
-
-    # Clickable Quick Action Cards
-    render_section_bar("Quick Actions")
-    qa1, qa2, qa3, qa4 = st.columns(4)
-    with qa1:
-        st.page_link(
-            "app/dashboard/pages/09_Import_Dataset.py",
-            label="Upload New Dataset",
-            icon=":material/upload_file:",
-            use_container_width=True,
-        )
-    with qa2:
-        st.page_link(
-            "app/dashboard/pages/02_Water_Quality_Toxicity.py",
-            label="Toxicity Risk Screening",
-            icon=":material/science:",
-            use_container_width=True,
-        )
-    with qa3:
-        st.page_link(
-            "app/dashboard/pages/04_Growth_Feeding_Advisor.py",
-            label="Feeding & Growth Advisor",
-            icon=":material/scale:",
-            use_container_width=True,
-        )
-    with qa4:
-        st.page_link(
-            "app/dashboard/pages/01_Overview.py",
-            label="Pond Priority Queue",
-            icon=":material/dashboard:",
-            use_container_width=True,
-        )
-
-    # Primary Visual Analytics (Tabbed to keep overview compact without excessive scrolling)
-    tab_wq, tab_risk, tab_obs = st.tabs([
-        "Water Quality & Growth Trends",
-        "Toxicity Risk & Pond Comparison",
-        "Recent Observations & Activity",
+    # ── Top Action Tabs ───────────────────────────────────────────────
+    tab_view, tab_add_farm, tab_add_container, tab_upload = st.tabs([
+        f"📋 Existing Farms & {container_label}s",
+        "➕ Add New Farm",
+        f"➕ Add {container_label}",
+        "📤 Import Custom Dataset",
     ])
 
-    chart_df = df_view.dropna(subset=["datetime_dt"]).sort_values("datetime_dt")
+    # ── TAB 1: Existing Farms & Containers ────────────────────────────
+    with tab_view:
+        st.markdown(f"#### Active {current_farm_type} Inventory")
 
-    with tab_wq:
-        if not chart_df.empty:
-            if selected_pond == "All Ponds in Scope":
-                trend = (
-                    chart_df.set_index("datetime_dt")[["dissolved_oxygen_mg_l", "ph", "temp_c", "primary_calculated_nh3_mg_l"]]
-                    .resample("ME")
-                    .median()
-                    .reset_index()
-                )
-                title_suffix = f"Monthly Median ({selected_region})"
-            else:
-                trend = chart_df[["datetime_dt", "dissolved_oxygen_mg_l", "ph", "temp_c", "primary_calculated_nh3_mg_l"]].copy()
-                title_suffix = f"Pond {selected_pond}"
+        # Global Container Selector
+        all_ponds = sorted(df_tox["pond_id"].dropna().astype(str).unique().tolist())
+        # add any session registered ponds
+        for p in st.session_state["registered_ponds"]:
+            if p["container_id"] not in all_ponds:
+                all_ponds.append(p["container_id"])
 
-            c_left, c_right = st.columns(2)
-            with c_left:
-                fig_do = px.line(
-                    trend,
-                    x="datetime_dt",
-                    y="dissolved_oxygen_mg_l",
-                    markers=True,
-                    title=f"Morning Dissolved Oxygen (mg/L) — {title_suffix}",
-                    labels={"datetime_dt": "Date", "dissolved_oxygen_mg_l": "DO (mg/L)"},
-                )
-                fig_do.update_traces(line_color=PALETTE["teal_primary"], line_width=2.5)
-                fig_do.add_hline(y=3.0, line_dash="dash", line_color="#E7A23B", annotation_text="3.0 mg/L Screening")
-                fig_do.update_layout(template="plotly_white", height=300, margin=dict(l=20, r=20, t=42, b=20))
-                st.plotly_chart(fig_do, use_container_width=True)
+        current_selected = st.session_state.get("selected_pond", all_ponds[0] if all_ponds else "POND-001")
+        if current_selected not in all_ponds and all_ponds:
+            current_selected = all_ponds[0]
 
-            with c_right:
-                fig_temp = px.line(
-                    trend,
-                    x="datetime_dt",
-                    y="temp_c",
-                    markers=True,
-                    title=f"Temperature (°C) & pH — {title_suffix}",
-                    labels={"datetime_dt": "Date", "temp_c": "Temp (°C)"},
-                )
-                fig_temp.update_traces(line_color=PALETTE["navy_primary"], name="Temp (°C)", showlegend=True)
-                fig_temp.add_scatter(
-                    x=trend["datetime_dt"],
-                    y=trend["ph"],
-                    mode="lines+markers",
-                    name="pH",
-                    yaxis="y2",
-                    line=dict(color=PALETTE["teal_accent"], dash="dot"),
-                )
-                fig_temp.update_layout(
-                    template="plotly_white",
-                    height=300,
-                    margin=dict(l=20, r=40, t=42, b=20),
-                    yaxis2=dict(title="pH", overlaying="y", side="right", showgrid=False),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                )
-                st.plotly_chart(fig_temp, use_container_width=True)
-
-            c_nh3, c_gw = st.columns(2)
-            with c_nh3:
-                nh3_trend = trend.dropna(subset=["primary_calculated_nh3_mg_l"])
-                if not nh3_trend.empty:
-                    fig_nh3 = px.line(
-                        nh3_trend,
-                        x="datetime_dt",
-                        y="primary_calculated_nh3_mg_l",
-                        markers=True,
-                        title=f"Calculated NH3 Concentration (mg/L) — {title_suffix}",
-                        labels={"datetime_dt": "Date", "primary_calculated_nh3_mg_l": "NH3 (mg/L)"},
-                    )
-                    fig_nh3.update_traces(line_color="#dc2626", line_width=2.2)
-                    fig_nh3.update_layout(template="plotly_white", height=290, margin=dict(l=20, r=20, t=42, b=20))
-                    st.plotly_chart(fig_nh3, use_container_width=True)
-                else:
-                    st.info("Insufficient NH3 records in the selected filter range.")
-
-            with c_gw:
-                if not df_growth_view.empty and "average_fish_weight_g" in df_growth_view.columns:
-                    gw = df_growth_view.copy()
-                    gw["dt"] = pd.to_datetime(gw["datetime"], errors="coerce")
-                    gw = gw.dropna(subset=["dt", "average_fish_weight_g"]).sort_values("dt")
-                    if not gw.empty:
-                        if selected_pond == "All Ponds in Scope":
-                            gw_plot = gw.set_index("dt")[["average_fish_weight_g"]].resample("ME").median().reset_index()
-                            gw_title = f"Median Cohort Fish Weight (g/fish) — {selected_region}"
-                        else:
-                            gw_plot = gw
-                            gw_title = f"Cohort Average Fish Weight (g/fish) — {selected_pond}"
-                        fig_gw = px.line(
-                            gw_plot,
-                            x="dt",
-                            y="average_fish_weight_g",
-                            markers=True,
-                            title=gw_title,
-                            labels={"dt": "Date", "average_fish_weight_g": "Weight (g/fish)"},
-                        )
-                        fig_gw.update_traces(line_color=PALETTE["teal_primary"], line_width=2.2)
-                        fig_gw.update_layout(template="plotly_white", height=290, margin=dict(l=20, r=20, t=42, b=20))
-                        st.plotly_chart(fig_gw, use_container_width=True)
-                    else:
-                        st.info("No dated fish-weight records available in the selected range.")
-                else:
-                    st.info("No fish-weight records available in the selected scope.")
-        else:
-            st.warning("No dated water-quality observations available for the selected filter.")
-
-    with tab_risk:
-        r_left, r_right = st.columns(2)
-        with r_left:
-            tier_series = df_view["primary_calculated_nh3_mg_l"].apply(_classify_nh3_tier)
-            tier_counts = (
-                tier_series.value_counts()
-                .reindex(["Optimal (<0.02)", "Caution (0.02–0.05)", "Elevated (0.05–0.10)", "Critical (≥0.10)", "Missing"], fill_value=0)
-                .reset_index()
+        sel_col1, sel_col2 = st.columns([1.5, 2.5])
+        with sel_col1:
+            chosen_container = st.selectbox(
+                f"Select Active {container_id_label} for Analysis across all pages:",
+                options=all_ponds,
+                index=all_ponds.index(current_selected) if current_selected in all_ponds else 0,
+                key="farm_mgmt_active_container_select",
             )
-            tier_counts.columns = ["Toxicity Tier", "Observations"]
-            fig_tier = px.bar(
-                tier_counts,
-                x="Toxicity Tier",
-                y="Observations",
-                color="Toxicity Tier",
+            st.session_state["selected_pond"] = chosen_container
+            st.session_state["active_container_id"] = chosen_container
+
+        with sel_col2:
+            st.caption(
+                f"**Active Container:** `{chosen_container}` ({current_farm_type}). "
+                f"Selecting this updates the active scope for Water Quality, Feeding & Growth, and Historical Reports."
+            )
+
+        # Container Details Card
+        df_pond_wq = df_tox[df_tox["pond_id"].astype(str) == chosen_container].sort_values("datetime_dt")
+        df_pond_growth = df_growth[df_growth["pond_id"].astype(str) == chosen_container]
+        df_pond_feed = df_feeding[df_feeding["pond_id"].astype(str) == chosen_container] if not df_feeding.empty and "pond_id" in df_feeding.columns else pd.DataFrame()
+
+        if not df_pond_wq.empty:
+            latest_row = df_pond_wq.iloc[-1]
+            last_date = str(latest_row.get("datetime", ""))[:10]
+            last_do = latest_row.get("dissolved_oxygen_mg_l", float("nan"))
+            last_ph = latest_row.get("ph", float("nan"))
+            last_temp = latest_row.get("temp_c", float("nan"))
+            last_nh3 = latest_row.get("primary_calculated_nh3_mg_l", float("nan"))
+            weather_val = latest_row.get("Weather", "Not Recorded") if current_farm_type == "Outdoor Aquaculture" else "Indoor Environment (Ambient)"
+
+            m1, m2, m3, m4, m5 = st.columns(5)
+            with m1:
+                render_metric_card(
+                    title=f"Active {container_label}",
+                    value=chosen_container,
+                    subtitle=f"{current_farm_type}",
+                    benchmark_ref="System ID",
+                    icon="🏷️",
+                    accent="teal",
+                )
+            with m2:
+                render_metric_card(
+                    title="Latest Morning DO",
+                    value=f"{last_do:.2f} mg/L" if pd.notna(last_do) else "N/A",
+                    subtitle="06:00–08:30 AM Log",
+                    benchmark_ref="Safe: > 4.0 mg/L",
+                    icon="💧",
+                    accent="success" if (pd.notna(last_do) and last_do >= 4.0) else "warning",
+                )
+            with m3:
+                render_metric_card(
+                    title="Latest Water pH",
+                    value=f"{last_ph:.2f}" if pd.notna(last_ph) else "N/A",
+                    subtitle=f"Temp: {last_temp:.1f} °C" if pd.notna(last_temp) else "N/A",
+                    benchmark_ref="Safe: 6.5–8.5",
+                    icon="🧪",
+                    accent="teal",
+                )
+            with m4:
+                render_metric_card(
+                    title="Calculated NH₃",
+                    value=f"{last_nh3:.4f} mg/L" if pd.notna(last_nh3) else "N/A",
+                    subtitle=_classify_nh3_tier(last_nh3),
+                    benchmark_ref="Toxic threshold: 0.05",
+                    icon="⚠️" if (pd.notna(last_nh3) and last_nh3 >= 0.05) else "✅",
+                    accent="warning" if (pd.notna(last_nh3) and last_nh3 >= 0.05) else "aqua",
+                )
+            with m5:
+                render_metric_card(
+                    title="Observation Context",
+                    value=str(weather_val)[:15],
+                    subtitle=f"Observed: {last_date}",
+                    benchmark_ref="Field Visit Log",
+                    icon="🌤️" if current_farm_type == "Outdoor Aquaculture" else "🏢",
+                    accent="teal",
+                )
+
+            # Trajectory Chart for Selected Container
+            st.markdown(f"##### Historical Parameter Trajectory for `{chosen_container}`")
+            fig_p = px.line(
+                df_pond_wq,
+                x="datetime_dt",
+                y=["dissolved_oxygen_mg_l", "ph", "temp_c"],
+                markers=True,
+                labels={"datetime_dt": "Date", "value": "Reading", "variable": "Parameter"},
+                title=f"Water Quality Trends — {container_label} {chosen_container}",
                 color_discrete_map={
-                    "Optimal (<0.02)": "#269B72",
-                    "Caution (0.02–0.05)": "#43BFC0",
-                    "Elevated (0.05–0.10)": "#E7A23B",
-                    "Critical (≥0.10)": "#D9534F",
-                    "Missing": "#94a3b8",
+                    "dissolved_oxygen_mg_l": "#087F72",
+                    "ph": "#43BFC0",
+                    "temp_c": "#E7A23B",
                 },
-                title="Ammonia Toxicity Screening Distribution (Emerson NH3)",
             )
-            fig_tier.update_layout(template="plotly_white", height=320, showlegend=False, margin=dict(l=20, r=20, t=42, b=20))
-            st.plotly_chart(fig_tier, use_container_width=True)
+            fig_p.update_layout(height=280, template="plotly_white", margin=dict(l=20, r=20, t=35, b=20))
+            st.plotly_chart(fig_p, use_container_width=True)
 
-        with r_right:
-            if df_view["pond_id"].nunique() > 1:
-                pond_comp = (
-                    df_view.groupby("pond_id", as_index=False)
-                    .agg(median_do=("dissolved_oxygen_mg_l", "median"), median_nh3=("primary_calculated_nh3_mg_l", "median"))
-                    .dropna(subset=["median_do"])
-                    .sort_values("median_do", ascending=True)
-                    .head(15)
+        # Registered Farms Table
+        st.markdown("##### Registered Farm Facilities")
+        farms_df = pd.DataFrame(st.session_state["registered_farms"])
+        st.dataframe(farms_df, use_container_width=True, hide_index=True)
+
+    # ── TAB 2: Add New Farm ───────────────────────────────────────────
+    with tab_add_farm:
+        st.markdown("#### Register a New Farm")
+        st.caption("Create a new commercial farm profile in the system. Stored in your active session.")
+
+        with st.form("add_farm_form", clear_on_submit=True):
+            f_col1, f_col2 = st.columns(2)
+            with f_col1:
+                f_name = st.text_input("Farm Name / Facility Title:", placeholder="e.g. Apex Aquaculture Hatchery")
+                f_region = st.text_input("Region / Geographical Location:", placeholder="e.g. Delta Sector 4")
+            with f_col2:
+                f_env = st.selectbox("Operational Environment:", ["Outdoor Aquaculture", "Indoor Aquaculture"], index=0 if current_farm_type == "Outdoor Aquaculture" else 1)
+                f_notes = st.text_area("Operational Notes:", placeholder="Water source, aeration setup, species cultured...")
+
+            submit_farm = st.form_submit_button("➕ Register Farm", use_container_width=True)
+            if submit_farm:
+                if f_name.strip():
+                    new_farm_entry = {
+                        "farm_id": f"FARM-{len(st.session_state['registered_farms']) + 1:03d}",
+                        "name": f_name.strip(),
+                        "environment": f_env,
+                        "region": f_region.strip() or "Standard Region",
+                        "container_count": 0,
+                    }
+                    st.session_state["registered_farms"].append(new_farm_entry)
+                    st.success(f"✅ Farm **{f_name}** successfully registered ({new_farm_entry['farm_id']})!")
+                    st.rerun()
+                else:
+                    st.error("Please enter a valid farm name.")
+
+    # ── TAB 3: Add Container (Pond / Tank) ─────────────────────────────
+    with tab_add_container:
+        st.markdown(f"#### Add a New {container_label}")
+        st.caption(f"Add a new {container_label.lower()} to your registered facilities.")
+
+        with st.form("add_container_form", clear_on_submit=True):
+            farm_names = [f["name"] for f in st.session_state["registered_farms"]]
+            c_col1, c_col2 = st.columns(2)
+            with c_col1:
+                target_farm = st.selectbox("Assign to Farm:", options=farm_names if farm_names else ["Default Farm"])
+                container_id_input = st.text_input(
+                    f"{container_id_label}:",
+                    placeholder=f"e.g. {'TANK-101' if current_farm_type == 'Indoor Aquaculture' else 'POND-050'}",
                 )
-                fig_comp = px.bar(
-                    pond_comp,
-                    x="pond_id",
-                    y="median_do",
-                    color="median_nh3",
-                    title=f"{container_label} Comparison (Lowest 15 Median DO)",
-                    labels={"pond_id": f"{container_label} ID", "median_do": "Median DO (mg/L)", "median_nh3": "Median NH3"},
-                    color_continuous_scale="Tealrose",
+            with c_col2:
+                c_system = st.selectbox(
+                    "System Type:",
+                    [
+                        "Recirculating Aquaculture System (RAS)",
+                        "Indoor Fiberglass Tank",
+                        "Indoor Concrete Cistern",
+                        "Open Earthen Pond",
+                        "HDPE Lined Pond",
+                        "Raceway System",
+                    ]
+                    if current_farm_type == "Indoor Aquaculture"
+                    else [
+                        "Open Earthen Pond",
+                        "HDPE Lined Pond",
+                        "Semi-Intensive Embankment Pond",
+                        "Irrigation Canal Cage",
+                    ],
                 )
-                fig_comp.update_layout(template="plotly_white", height=320, margin=dict(l=20, r=20, t=42, b=20))
-                st.plotly_chart(fig_comp, use_container_width=True)
-            else:
-                st.info(f"Select 'All {container_label}s in Scope' to compare multiple {container_label.lower()}s side by side.")
+                species = st.selectbox("Target Cultured Species:", ["Nile Tilapia", "African Catfish", "Common Carp", "Pangasius", "Tiger Shrimp", "Other"])
 
-    with tab_obs:
-        obs_col, act_col = st.columns([1.4, 1])
-        with obs_col:
-            st.markdown(f"#### Recent {container_label} Observations")
-            recent_cols = [
-                "pond_id",
-                "region",
-                "datetime",
-                "dissolved_oxygen_mg_l",
-                "ph",
-                "temp_c",
-                "primary_calculated_nh3_mg_l",
-                "dead_fish_count",
-            ]
-            avail_cols = [c for c in recent_cols if c in df_view.columns]
-            recent_df = (
-                df_view.sort_values("datetime_dt", ascending=False)[avail_cols]
-                .head(15)
-                .rename(columns={
-                    "pond_id": f"{container_label} ID",
-                    "region": "Region",
-                    "datetime": "Date",
-                    "dissolved_oxygen_mg_l": "DO (mg/L)",
-                    "ph": "pH",
-                    "temp_c": "Temp (°C)",
-                    "primary_calculated_nh3_mg_l": "NH3 (mg/L)",
-                    "dead_fish_count": "Dead Fish",
-                })
-            )
-            st.dataframe(recent_df, use_container_width=True, hide_index=True)
+            submit_container = st.form_submit_button(f"➕ Register {container_label}", use_container_width=True)
+            if submit_container:
+                if container_id_input.strip():
+                    cid = container_id_input.strip().upper()
+                    st.session_state["registered_ponds"].append({
+                        "container_id": cid,
+                        "farm": target_farm,
+                        "environment": current_farm_type,
+                        "system": c_system,
+                        "species": species,
+                        "date_added": str(datetime.date.today()),
+                    })
+                    st.session_state["selected_pond"] = cid
+                    st.success(f"✅ {container_label} **{cid}** successfully registered and selected for active analysis!")
+                    st.rerun()
+                else:
+                    st.error(f"Please enter a valid {container_id_label}.")
 
-        with act_col:
-            st.markdown("#### Recent Prediction Activity")
-            history = st.session_state.get("prediction_history", [])
-            if history:
-                hist_df = pd.DataFrame(history).iloc[::-1].head(10)
-                st.dataframe(hist_df, use_container_width=True, hide_index=True)
-            else:
-                st.info("No batch predictions run in this session yet. Use **Upload New Dataset** to analyse new CSV observations.")
+    # ── TAB 4: Upload Custom Field Dataset ─────────────────────────────
+    with tab_upload:
+        st.markdown("#### Import Custom Aquaculture Field Logs")
+        st.caption(
+            "Upload your own CSV inspection records. Supports both indoor tanks (`tank_id`, `system_id`) "
+            "and outdoor ponds (`pond_id`). All analyses run locally in your session."
+        )
 
-    # Collapsed Technical & Scope Notes
-    with st.expander("About Historical Scope, Hierarchy & Governance", expanded=False):
+        uploaded_file = st.file_uploader(
+            "Choose a CSV file containing aquaculture observations:",
+            type=["csv"],
+            key="farm_mgmt_csv_uploader",
+        )
+
+        if uploaded_file is not None:
+            try:
+                raw_df = pd.read_csv(uploaded_file)
+                st.write(f"**Loaded {len(raw_df):,} rows and {len(raw_df.columns)} columns.**")
+                st.dataframe(raw_df.head(5), use_container_width=True)
+
+                # Automated column detection and mapping
+                mapped_df, mapping_report = detect_and_map_columns(raw_df)
+                validation_results = validate_mapped_dataframe(mapped_df)
+
+                if validation_results["is_valid"]:
+                    st.success("✅ Dataset successfully validated against precision aquaculture schema!")
+                    if st.button("Apply Dataset to Active Session Analysis", use_container_width=True):
+                        save_uploaded_dataset_to_session(uploaded_file.name, raw_df, mapped_df, validation_results)
+                        st.success("🎉 Dataset loaded! Active ponds/tanks are now available across all pages.")
+                        st.rerun()
+                else:
+                    st.warning("⚠️ Some required fields could not be mapped automatically:")
+                    st.markdown(generate_validation_report_markdown(validation_results))
+
+            except Exception as exc:
+                st.error(f"Error processing CSV file: {exc}")
+
+    # ── Governance and Scope Footer ───────────────────────────────────
+    with st.expander("Farm Management Scope & Data Governance", expanded=False):
         st.markdown(
-            "- **Recorded Hierarchy:** The audited historical dataset records `region` and `pond_id` without a separate corporate farm parent table.\n"
-            "- **Sampling Protocol:** Routine morning field visits (`06:00–08:30 AM`) spaced `3–45 days` apart; NOT live IoT streaming.\n"
-            "- **Decision-Support Only:** All outputs are observational aids (`is_automatic_control = False`); zero automated equipment actuation."
+            "- **No Separate ML Models Claim:** Analytical and predictive algorithms evaluate standard physical-chemical water quality metrics (pH, Temperature, Ammonia, Dissolved Oxygen). No unvalidated separate machine learning model is fabricated for indoor vs outdoor environments.\n"
+            "- **Zero Actuation:** Precision AquaDSS provides advisory analytics only (`is_automatic_control = False`). Aerators, feeders, and recirculating pumps must be verified and operated by qualified personnel.\n"
+            "- **Data Segregation:** Uploaded session files and simulation runs are strictly segregated from audited commercial baseline datasets."
         )
 
 

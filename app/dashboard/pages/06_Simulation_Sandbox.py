@@ -1,14 +1,28 @@
-"""Page 6: Simulated Scenarios Sandbox (Non-Operational).
+"""Page 4: Live Simulation – Precision AquaDSS.
 
-Operational Category: SIMULATED (Synthetic Benchmark Modeling & Hypothetical Stress-Testing).
+Operational Category: SIMULATED (Synthetic Sensor Simulation, Scenario Stress-Testing & Dynamic Adaptation).
 Provides:
-1. Isolated What-If Scenario Stress Simulator (strictly quarantined, operational_use_permitted = False).
-2. Synthetic Reference Simulation Explorer for iot_water_model_v2.csv.
-3. Expandable isolation and non-contamination governance policy.
+1. Real-Time Simulated Sensor Monitoring: Generates changing sample sensor readings
+   for pH, Temperature, Ammonia, and Dissolved Oxygen.
+2. Interactive Controls: Start / Step, Pause, Reset, and Scenario Selection:
+   - Normal conditions
+   - Increasing ammonia
+   - Overfeeding scenario
+   - Low dissolved oxygen (Hypoxia)
+   - High temperature
+   - Custom scenario
+3. Updating Live Trend Charts: Plotly time-series visualising simulated sensor streams.
+4. Dynamic Risk Alerts: Triggers immediate visual warnings when simulated values breach safe thresholds.
+5. Adaptive Feeding Guidance: Demonstrates real-time feeding recommendation changes and prevented feed waste.
+6. Quarantine Governance: Prominently labelled "SIMULATED SENSOR DATA – FOR DEMONSTRATION AND TESTING ONLY"
+   with operational_use_permitted = False, is_automatic_control = False, and zero physical sensor claims.
 """
 
+from typing import Dict, Any, List
+import random
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
 from app.core.chemistry import calculate_nh3_from_tan_n, calculate_unionized_fraction
@@ -17,7 +31,7 @@ from app.dashboard.components.banners import (
     render_decision_support_banner,
     render_simulation_warning_banner,
 )
-from app.dashboard.components.header import render_page_header
+from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.metric_card import render_metric_card
 from app.dashboard.utils.helpers import (
     format_percentage,
@@ -26,6 +40,7 @@ from app.dashboard.utils.helpers import (
     get_container_id_label,
     get_farm_type_disclaimer,
     log_prediction_event,
+    FREE_PLATFORM_NOTICE,
 )
 from app.dashboard.utils.styles import inject_custom_css
 from app.models.registry import get_model_registry
@@ -81,311 +96,382 @@ def render_synthetic_time_series_chart(df_iot: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def render_page() -> None:
-    """Render the Simulated Scenarios Sandbox page."""
-    inject_custom_css()
+def initialize_simulation_state() -> None:
+    """Initialize or reset live simulation time-series state in session."""
+    st.session_state["live_sim_running"] = False
+    st.session_state["live_sim_hour"] = 0
+    st.session_state["live_sim_history"] = [
+        {
+            "hour": 0,
+            "do": 5.80,
+            "ph": 7.70,
+            "temp": 28.0,
+            "tan": 0.35,
+            "nh3": 0.0125,
+            "feed_baseline": 50.0,
+            "feed_recommended": 50.0,
+            "status": "Optimal",
+        }
+    ]
 
-    render_page_header(
-        title="Simulated Scenarios Sandbox (Non-Operational)",
-        subtitle="Quarantined synthetic benchmark modeling and hypothetical stress-testing.",
-        category_key="SIMULATED",
-    )
 
-    render_decision_support_banner()
-    render_simulation_warning_banner()
+def advance_simulation_step(scenario: str, custom_vals: Dict[str, float]) -> None:
+    """Advance simulation by 1 synthetic hour according to scenario rules."""
+    history = st.session_state.get("live_sim_history", [])
+    if not history:
+        initialize_simulation_state()
+        history = st.session_state["live_sim_history"]
 
-    st.warning(
-        "**Quarantine Status:** `SIMULATED_SCENARIO_ONLY` | `operational_use_permitted = False` | "
-        "Operational farm deployment is **PROHIBITED**."
-    )
+    last = history[-1]
+    new_h = last["hour"] + 1
 
-    # ── What-If Scenario Stress Simulator ─────────────────────────────
-    st.subheader("What-If Scenario Stress Simulator & Early Warning Demonstration")
-    st.caption(
-        "Inject hypothetical conditions or choose a pre-configured stress scenario to inspect "
-        "changing simulated sensor readings, early toxicity alerts, explainable risk factors, and feed waste reduction."
-    )
+    if scenario == "Normal conditions":
+        # Natural oscillating diurnal conditions
+        do = max(4.5, min(7.5, last["do"] + random.uniform(-0.15, 0.15)))
+        ph = max(7.4, min(8.1, last["ph"] + random.uniform(-0.05, 0.05)))
+        temp = max(26.0, min(30.0, last["temp"] + random.uniform(-0.2, 0.2)))
+        tan = max(0.2, min(0.6, last["tan"] + random.uniform(-0.03, 0.03)))
+        feed_b = 50.0
+    elif scenario == "Increasing ammonia":
+        # Steady consecutive rise in TAN and ammonia
+        do = max(3.5, last["do"] - 0.2)
+        ph = min(8.4, last["ph"] + 0.08)
+        temp = min(31.5, last["temp"] + 0.3)
+        tan = last["tan"] + 0.35
+        feed_b = 60.0
+    elif scenario == "Overfeeding scenario":
+        # Rapid organic accumulation
+        do = max(2.1, last["do"] - 0.45)
+        ph = min(8.65, last["ph"] + 0.12)
+        temp = min(32.0, last["temp"] + 0.2)
+        tan = last["tan"] + 0.65
+        feed_b = 85.0
+    elif scenario == "Low dissolved oxygen":
+        # Precipitous morning hypoxia drop
+        do = max(0.9, last["do"] - 0.75)
+        ph = max(7.2, last["ph"] - 0.05)
+        temp = last["temp"]
+        tan = last["tan"] + 0.05
+        feed_b = 55.0
+    elif scenario == "High temperature":
+        # Thermal surge
+        do = max(3.2, last["do"] - 0.3)
+        ph = min(8.9, last["ph"] + 0.15)
+        temp = min(36.5, last["temp"] + 1.2)
+        tan = last["tan"] + 0.15
+        feed_b = 65.0
+    else:  # Custom scenario
+        do = custom_vals["do"] + random.uniform(-0.05, 0.05)
+        ph = custom_vals["ph"] + random.uniform(-0.02, 0.02)
+        temp = custom_vals["temp"] + random.uniform(-0.1, 0.1)
+        tan = custom_vals["tan"] + random.uniform(-0.02, 0.02)
+        feed_b = custom_vals["feed"]
 
-    SCENARIO_PRESETS = {
-        "Custom Scenario (Manual Sliders)": {
-            "do": 1.50, "ph": 8.60, "temp": 32.0, "tan": 2.50, "feed": 50.0, "weight": 180.0,
-            "desc": "Manual slider exploration across hypothetical water-quality conditions.",
-        },
-        "🚨 Overfeeding & Critical Ammonia Spike": {
-            "do": 2.40, "ph": 8.85, "temp": 32.5, "tan": 3.80, "feed": 85.0, "weight": 200.0,
-            "desc": "Demonstrates early ammonia toxicity warning, elevated un-ionized NH3, and 100% feed cessation to prevent feed waste.",
-        },
-        "⚠️ Severe Pre-Dawn Hypoxia Stress": {
-            "do": 1.10, "ph": 7.60, "temp": 28.0, "tan": 0.80, "feed": 60.0, "weight": 150.0,
-            "desc": "Demonstrates critical hypoxia warning, aerator intervention prompt, and emergency feed throttling.",
-        },
-        "☀️ Afternoon Thermal & pH Surge": {
-            "do": 4.80, "ph": 9.10, "temp": 35.5, "tan": 1.60, "feed": 70.0, "weight": 220.0,
-            "desc": "Demonstrates temperature throttle and elevated un-ionized fraction (f) driven by alkaline pH.",
-        },
-        "✅ Optimal Growth & Feeding Balance": {
-            "do": 5.80, "ph": 7.70, "temp": 28.0, "tan": 0.35, "feed": 45.0, "weight": 160.0,
-            "desc": "Demonstrates optimal conditions with 100% feed allowance and cohort growth support.",
-        },
-    }
+    nh3 = calculate_nh3_from_tan_n(tan, ph, temp, round_digits=5)
 
-    selected_preset_name = st.selectbox(
-        "Select Simulation Scenario Preset:",
-        options=list(SCENARIO_PRESETS.keys()),
-        index=0,
-        key="sim_preset_choice",
-    )
-    preset_data = SCENARIO_PRESETS[selected_preset_name]
-    st.info(f"**Scenario Context:** {preset_data['desc']}")
-
-    with st.form("what_if_scenario_form"):
-        c1, c2 = st.columns(2)
-        with c1:
-            sim_do = st.slider(
-                "Synthetic Morning DO (mg/L):",
-                min_value=0.0,
-                max_value=12.0,
-                value=float(preset_data["do"]),
-                step=0.1,
-                help="Simulated DO reading. NOT physical live sensor data.",
-            )
-            sim_ph = st.slider(
-                "Synthetic Water pH:",
-                min_value=4.0,
-                max_value=11.0,
-                value=float(preset_data["ph"]),
-                step=0.1,
-                help="Simulated water pH.",
-            )
-            sim_temp = st.slider(
-                "Synthetic Water Temperature (°C):",
-                min_value=15.0,
-                max_value=42.0,
-                value=float(preset_data["temp"]),
-                step=0.5,
-                help="Simulated water temperature.",
-            )
-        with c2:
-            sim_tan = st.slider(
-                "Synthetic Total Ammonia (TAN, mg/L):",
-                min_value=0.0,
-                max_value=15.0,
-                value=float(preset_data["tan"]),
-                step=0.25,
-                help="2.0 mg/L TAN is a test-kit graduation mark, NOT a validated toxicity threshold.",
-            )
-            sim_feed = st.slider(
-                "Synthetic Baseline Feed (kg/day):",
-                min_value=0.0,
-                max_value=200.0,
-                value=float(preset_data["feed"]),
-                step=5.0,
-                help="Baseline daily feeding before environmental throttling.",
-            )
-            sim_weight = st.slider(
-                "Synthetic Fish Cohort Weight (g/fish):",
-                min_value=10.0,
-                max_value=1000.0,
-                value=float(preset_data["weight"]),
-                step=10.0,
-                help="Average body weight of fish cohort.",
-            )
-
-        st.form_submit_button("Simulate Hypothetical Scenario", use_container_width=True)
-
-    # Execute quarantined models
-    sim_f = calculate_unionized_fraction(sim_ph, sim_temp)
-    sim_nh3 = calculate_nh3_from_tan_n(sim_tan, sim_ph, sim_temp, round_digits=5)
-
+    # Evaluate provisional feeding advisory
     registry = get_model_registry()
     feed_payload = {
-        "dissolved_oxygen_mg_l": float(sim_do),
-        "temp_c": float(sim_temp),
-        "ammonia_tan_nh3_n_mg_l": float(sim_tan),
-        "primary_calculated_nh3_mg_l": float(sim_nh3) if pd.notna(sim_nh3) else None,
-        "current_feed_amount_kg": float(sim_feed),
-        "average_fish_weight_g": float(sim_weight),
+        "dissolved_oxygen_mg_l": float(do),
+        "temp_c": float(temp),
+        "ammonia_tan_nh3_n_mg_l": float(tan),
+        "primary_calculated_nh3_mg_l": float(nh3) if pd.notna(nh3) else None,
+        "current_feed_amount_kg": float(feed_b),
+        "average_fish_weight_g": 180.0,
         "is_simulated": True,
         "data_source": "benchmark_simulation",
     }
-    do_payload = {
-        "curr_do": float(sim_do),
-        "gap_days": 21.0,
-        "is_simulated": True,
-        "data_source": "benchmark_simulation",
-    }
-    weight_payload = {
-        "current_weight_g": float(sim_weight),
-        "gap_days": 21.0,
-        "curr_do": float(sim_do),
-        "is_simulated": True,
-    }
+    adv_res = registry.get_feeding_advisory(feed_payload)
+    rec_feed = adv_res.get("recommended_feed_kg", feed_b)
 
-    try:
-        res_feed = registry.get_feeding_advisory(feed_payload)
-        res_do = registry.predict_do_hypoxia(do_payload)
-        res_weight = registry.predict_fish_growth(weight_payload)
-    except Exception as exc:
-        st.error(f"Error executing simulated model responses: {exc}")
-        return
+    # Determine status
+    if do < 2.0 or (pd.notna(nh3) and nh3 >= 0.10):
+        status = "Emergency Critical"
+    elif do < 3.0 or (pd.notna(nh3) and nh3 >= 0.05):
+        status = "Hazard Warning"
+    elif do < 4.0 or (pd.notna(nh3) and nh3 >= 0.02):
+        status = "Suboptimal Caution"
+    else:
+        status = "Optimal"
+
+    history.append({
+        "hour": new_h,
+        "do": round(do, 2),
+        "ph": round(ph, 2),
+        "temp": round(temp, 1),
+        "tan": round(tan, 2),
+        "nh3": round(nh3, 4) if pd.notna(nh3) else 0.0,
+        "feed_baseline": feed_b,
+        "feed_recommended": round(rec_feed, 1),
+        "status": status,
+    })
+    st.session_state["live_sim_history"] = history
+    st.session_state["live_sim_hour"] = new_h
+
+
+def render_page() -> None:
+    """Render the Live Simulation page."""
+    inject_custom_css()
 
     farm_type = get_active_farm_type()
     container_label = get_container_label(farm_type)
 
-    # Log to session prediction history (explicitly tagged as simulation)
-    sim_summary = (
-        f"Sim NH3: {sim_nh3:.4f} mg/L | Sim Advisory: {res_feed.get('advisory_action', 'N/A').replace('SIMULATED_', '')} "
-        f"({res_feed.get('reduction_percentage', 0.0):.0f}% cut) | DO Bench: {res_do.get('predicted_next_do_mg_l', 3.50):.2f} mg/L"
-    )
-    log_prediction_event(
-        analysis_type=f"Simulation Sandbox ({farm_type})",
-        container_id=f"Simulated {container_label}",
-        data_source="benchmark_simulation (Quarantined)",
-        is_simulated=True,
-        results_summary=sim_summary,
-        details={
-            "sim_do": sim_do,
-            "sim_ph": sim_ph,
-            "sim_temp": sim_temp,
-            "sim_tan": sim_tan,
-            "sim_nh3": sim_nh3,
-            "sim_feed_rec": res_feed.get("recommended_feed_kg"),
-        },
-        farm_type=farm_type,
+    render_page_header(
+        title="Live Simulation",
+        subtitle=f"Interactive synthetic sensor monitoring, dynamic alerts, and real-time feeding adaptation ({farm_type}).",
+        category_key="SIMULATED",
     )
 
-    # Simulated Results KPIs
-    st.subheader(f"Quarantined Simulation Response (Simulated {container_label} — {farm_type})")
-    st.info(
-        f"**Simulation Quarantine Active:** Simulated readings are strictly mathematical scenario inputs "
-        f"and are NEVER saved as actual historical {container_label.lower()} observations."
-    )
-    mr1, mr2, mr3, mr4 = st.columns(4)
-    with mr1:
-        render_metric_card(
-            title="Simulated Molecular NH3",
-            value=f"{sim_nh3:.4f} mg/L" if pd.notna(sim_nh3) else "N/A",
-            subtitle=f"f = {format_percentage(sim_f, decimals=2)}",
-            benchmark_ref="Emerson (1975) Sim",
-        )
-    with mr2:
-        render_metric_card(
-            title="Simulated Advisory Action",
-            value=res_feed.get("advisory_action", "N/A").replace("SIMULATED_", ""),
-            subtitle=f"{res_feed.get('reduction_percentage', 0.0):.0f}% Reduction Applied",
-            benchmark_ref="Provisional Heuristic",
-        )
-    with mr3:
-        render_metric_card(
-            title="Simulated Adjusted Feed",
-            value=f"{res_feed.get('recommended_feed_kg', 0.0):.1f} kg/day",
-            subtitle=f"From baseline {sim_feed:.1f} kg/day",
-            benchmark_ref=f"Status: {res_feed.get('status')}",
-        )
-    with mr4:
-        render_metric_card(
-            title="DO / Weight Benchmarks",
-            value=f"{res_do.get('predicted_next_do_mg_l', 3.50):.2f} mg/L",
-            subtitle=f"Cohort Weight: {res_weight.get('predicted_next_weight_g', sim_weight):.0f} g",
-            benchmark_ref="Constant / Persistence",
-        )
-
-    # ── Explainable Risk Factors & Early Toxicity Warning ─────────────
-    st.markdown("#### 🚨 Early Toxicity Warning & Explainable Risk Factors")
-    
-    # Classify simulated NH3 toxicity tier
-    if pd.notna(sim_nh3):
-        if sim_nh3 >= 0.10:
-            tox_badge = "CRITICAL AMMONIA TOXICITY (≥0.10 mg/L)"
-            tox_color = "#D9534F"
-            tox_bg = "#FDECEB"
-        elif sim_nh3 >= 0.05:
-            tox_badge = "ELEVATED AMMONIA RISK (0.05–0.10 mg/L)"
-            tox_color = "#E7A23B"
-            tox_bg = "#FFF8EB"
-        elif sim_nh3 >= 0.02:
-            tox_badge = "CAUTION: SUBOPTIMAL AMMONIA (0.02–0.05 mg/L)"
-            tox_color = "#43BFC0"
-            tox_bg = "#E3F5F3"
-        else:
-            tox_badge = "OPTIMAL UN-IONIZED AMMONIA (<0.02 mg/L)"
-            tox_color = "#269B72"
-            tox_bg = "#E3F6EE"
-    else:
-        tox_badge = "UNAVAILABLE"
-        tox_color = "#94a3b8"
-        tox_bg = "#f1f5f9"
-
+    # ── Mandatory Simulation Labelling ────────────────────────────────
     st.markdown(
-        f"""
-        <div style="background-color: #FFFFFF; border: 1px solid #DCE9E6; border-left: 4px solid {tox_color}; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.9rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem;">
-                <span style="font-weight: 800; font-size: 0.88rem; color: #173747;">Screening Status: {tox_badge}</span>
-                <span style="background-color: {tox_bg}; color: {tox_color}; font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px;">
-                    Simulated Reading
-                </span>
+        """
+        <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-left: 5px solid #D97706; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.9rem;">
+            <div style="font-weight: 800; font-size: 0.88rem; color: #92400E; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                ⚠️ SIMULATED SENSOR DATA – FOR DEMONSTRATION AND TESTING ONLY
             </div>
-            <div style="font-size: 0.82rem; color: #526873; line-height: 1.5;">
-                <strong>Explainable Chemistry Factors:</strong>
-                Total Ammonia (TAN = {sim_tan:.2f} mg/L) dissociates into toxic un-ionized NH3 based on temperature ({sim_temp:.1f} °C) 
-                and pH ({sim_ph:.2f}). At this equilibrium, <strong>{sim_f*100:.2f}%</strong> of total ammonia exists in the toxic un-ionized form (<strong>{sim_nh3:.4f} mg/L</strong>).
+            <div style="font-size: 0.80rem; color: #78350F; line-height: 1.45;">
+                This module generates changing synthetic readings to test predictive models and early warnings.
+                <strong>Readings do NOT represent actual physical sensor telemetry</strong> and are quarantined from farm records
+                (<code>operational_use_permitted = False</code>, <code>is_automatic_control = False</code>).
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ── Feed Waste Reduction & Adaptive Feeding Guidance ──────────────
-    st.markdown("#### 🍽️ Adaptive Feeding Guidance & Feed Waste Reduction")
-    throttles = res_feed.get("throttling_factors", {})
-    rec_feed_kg = res_feed.get("recommended_feed_kg", 0.0)
-    saved_feed_kg = max(0.0, sim_feed - rec_feed_kg)
-    pct_cut = res_feed.get("reduction_percentage", 0.0)
+    if "live_sim_history" not in st.session_state:
+        initialize_simulation_state()
 
-    fw1, fw2, fw3 = st.columns([1, 1, 1.4])
-    with fw1:
+    history = st.session_state.get("live_sim_history", [])
+    current_step = history[-1] if history else {}
+
+    # ── Simulation Scenarios & Control Panel ──────────────────────────
+    render_section_bar("Simulation Controls & Scenario Selection")
+
+    SCENARIOS = [
+        "Normal conditions",
+        "Increasing ammonia",
+        "Overfeeding scenario",
+        "Low dissolved oxygen",
+        "High temperature",
+        "Custom scenario",
+    ]
+
+    c_scen, c_act1, c_act2, c_act3 = st.columns([2.2, 1, 1, 1])
+
+    with c_scen:
+        selected_scenario = st.selectbox(
+            "Select Environmental Scenario:",
+            options=SCENARIOS,
+            index=1,  # Default to increasing ammonia to demonstrate early warning
+            key="live_sim_scenario_select",
+        )
+
+    with c_act1:
+        st.write("")
+        st.write("")
+        if st.button("▶️ Step (+1h)", use_container_width=True, help="Advance simulation by 1 synthetic hour"):
+            advance_simulation_step(selected_scenario, {
+                "do": st.session_state.get("sim_custom_do", 4.5),
+                "ph": st.session_state.get("sim_custom_ph", 7.8),
+                "temp": st.session_state.get("sim_custom_temp", 28.0),
+                "tan": st.session_state.get("sim_custom_tan", 0.5),
+                "feed": st.session_state.get("sim_custom_feed", 50.0),
+            })
+            st.rerun()
+
+    with c_act2:
+        st.write("")
+        st.write("")
+        if st.button("⏩ Run 6-Hour Test", use_container_width=True, help="Simulate a 6-hour sequence"):
+            for _ in range(6):
+                advance_simulation_step(selected_scenario, {
+                    "do": st.session_state.get("sim_custom_do", 4.5),
+                    "ph": st.session_state.get("sim_custom_ph", 7.8),
+                    "temp": st.session_state.get("sim_custom_temp", 28.0),
+                    "tan": st.session_state.get("sim_custom_tan", 0.5),
+                    "feed": st.session_state.get("sim_custom_feed", 50.0),
+                })
+            st.rerun()
+
+    with c_act3:
+        st.write("")
+        st.write("")
+        if st.button("🔄 Reset Simulation", use_container_width=True):
+            initialize_simulation_state()
+            st.rerun()
+
+    # Custom Scenario Controls if selected
+    custom_params = {}
+    if selected_scenario == "Custom scenario":
+        with st.expander("🛠️ Custom Sensor Parameter Sliders", expanded=True):
+            c_c1, c_c2 = st.columns(2)
+            with c_c1:
+                custom_params["do"] = st.slider("Simulated DO (mg/L):", 0.0, 12.0, 4.5, 0.1, key="sim_custom_do")
+                custom_params["ph"] = st.slider("Simulated pH:", 4.0, 11.0, 7.8, 0.05, key="sim_custom_ph")
+                custom_params["temp"] = st.slider("Simulated Temperature (°C):", 15.0, 42.0, 28.0, 0.5, key="sim_custom_temp")
+            with c_c2:
+                custom_params["tan"] = st.slider("Simulated TAN (mg/L):", 0.0, 15.0, 0.5, 0.1, key="sim_custom_tan")
+                custom_params["feed"] = st.slider("Baseline Feed (kg/day):", 0.0, 200.0, 50.0, 5.0, key="sim_custom_feed")
+
+    # ── Live Sensor Gauges (Current Synthetic Hour) ────────────────────
+    st.markdown(f"#### Current Simulated Sensor Telemetry (Hour {current_step.get('hour', 0)})")
+    k1, k2, k3, k4 = st.columns(4)
+
+    curr_do = current_step.get("do", 5.8)
+    curr_ph = current_step.get("ph", 7.7)
+    curr_temp = current_step.get("temp", 28.0)
+    curr_nh3 = current_step.get("nh3", 0.0125)
+
+    with k1:
         render_metric_card(
-            title="Baseline Daily Feed",
-            value=f"{sim_feed:.1f} kg/day",
-            subtitle="Standard ration",
+            title="Simulated DO",
+            value=f"{curr_do:.2f} mg/L",
+            subtitle="Hypoxia (< 3.0)" if curr_do < 3.0 else "Optimal",
+            benchmark_ref="Synthetic Sensor",
+            icon="🫁",
+            accent="warning" if curr_do < 3.0 else "success",
+        )
+    with k2:
+        render_metric_card(
+            title="Simulated pH",
+            value=f"{curr_ph:.2f}",
+            subtitle=f"Temp: {curr_temp:.1f} °C",
+            benchmark_ref="Synthetic Sensor",
+            icon="🧪",
+            accent="teal",
+        )
+    with k3:
+        render_metric_card(
+            title="Simulated Toxic NH₃",
+            value=f"{curr_nh3:.4f} mg/L",
+            subtitle="Toxic (≥ 0.05)" if curr_nh3 >= 0.05 else "Safe",
+            benchmark_ref="Emerson Chemistry",
+            icon="⚠️" if curr_nh3 >= 0.05 else "💧",
+            accent="warning" if curr_nh3 >= 0.05 else "aqua",
+        )
+    with k4:
+        render_metric_card(
+            title="Simulated Risk Status",
+            value=current_step.get("status", "Optimal"),
+            subtitle=f"Hour {current_step.get('hour', 0)} of simulation",
+            benchmark_ref="SIMULATED_SCENARIO_ONLY",
+            icon="🛡️",
+            accent="warning" if current_step.get("status") != "Optimal" else "success",
+        )
+
+    # ── Dynamic Risk Alerts ───────────────────────────────────────────
+    if curr_do < 2.0:
+        st.error(
+            f"🚨 **EMERGENCY HYPOXIA ALERT (Simulated Hour {current_step.get('hour', 0)}):** "
+            f"Dissolved oxygen has crashed to **{curr_do:.2f} mg/L**! Fish asphyxiation imminent. "
+            "Automated recommendation: 100% feed suspension and emergency mechanical aeration."
+        )
+    elif curr_do < 3.0:
+        st.warning(
+            f"⚠️ **LOW DISSOLVED OXYGEN WARNING:** DO is **{curr_do:.2f} mg/L** (< 3.0 mg/L). "
+            "Feed throttled by 50% to prevent organic decay in the water."
+        )
+
+    if curr_nh3 >= 0.05:
+        st.error(
+            f"⚠️ **EARLY TOXICITY WARNING (Consecutive Spike):** Toxic un-ionized ammonia has reached **{curr_nh3:.4f} mg/L**! "
+            "Driven by rising TAN and alkaline pH. Dynamic feeding engine recommends immediate feed reduction to prevent further organic loading."
+        )
+
+    # ── Updating Trend Graphs (Multi-Parameter Time Series) ───────────
+    render_section_bar("Simulated Water-Quality Timeline")
+    df_hist = pd.DataFrame(history)
+
+    fig_sim = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("Simulated DO & Temperature", "Simulated Toxic NH₃ & pH"),
+        horizontal_spacing=0.1,
+    )
+
+    # DO & Temp
+    fig_sim.add_trace(
+        go.Scatter(x=df_hist["hour"], y=df_hist["do"], mode="lines+markers", name="Simulated DO (mg/L)", line=dict(color="#087F72", width=2.5)),
+        row=1, col=1,
+    )
+    fig_sim.add_trace(
+        go.Scatter(x=df_hist["hour"], y=df_hist["temp"], mode="lines", name="Simulated Temp (°C)", line=dict(color="#E7A23B", width=1.8, dash="dot")),
+        row=1, col=1,
+    )
+    fig_sim.add_hline(y=3.0, line_dash="dash", line_color="#E53E3E", annotation_text="Hypoxia (3.0)", row=1, col=1)
+
+    # NH3 & pH
+    fig_sim.add_trace(
+        go.Scatter(x=df_hist["hour"], y=df_hist["nh3"], mode="lines+markers", name="Toxic NH₃ (mg/L)", line=dict(color="#D9534F", width=2.5)),
+        row=1, col=2,
+    )
+    fig_sim.add_hline(y=0.05, line_dash="dash", line_color="#D9534F", annotation_text="Toxicity (0.05)", row=1, col=2)
+
+    fig_sim.update_layout(
+        height=300,
+        template="plotly_white",
+        margin=dict(l=30, r=20, t=35, b=25),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    fig_sim.update_xaxes(title_text="Simulated Elapsed Hours")
+    st.plotly_chart(fig_sim, use_container_width=True)
+
+    # ── Real-Time Adaptive Feeding Adaptation ─────────────────────────
+    render_section_bar("Adaptive Feeding Recommendation & Feed Waste Mitigation")
+
+    baseline_feed = current_step.get("feed_baseline", 50.0)
+    rec_feed = current_step.get("feed_recommended", 50.0)
+    saved_feed = max(0.0, baseline_feed - rec_feed)
+    pct_cut = ((baseline_feed - rec_feed) / baseline_feed * 100.0) if baseline_feed > 0 else 0.0
+
+    af1, af2, af3 = st.columns([1, 1, 1.4])
+    with af1:
+        render_metric_card(
+            title="Baseline Feed Requirement",
+            value=f"{baseline_feed:.1f} kg/day",
+            subtitle="Standard unconstrained ration",
             icon="🥣",
             accent="teal",
         )
-    with fw2:
+    with af2:
         render_metric_card(
-            title="Adjusted Feed Recommendation",
-            value=f"{rec_feed_kg:.1f} kg/day",
+            title="Dynamically Adjusted Feed",
+            value=f"{rec_feed:.1f} kg/day",
             subtitle=f"{pct_cut:.0f}% reduction applied",
             icon="⚖️",
             accent="warning" if pct_cut > 0 else "success",
         )
-    with fw3:
+    with af3:
         render_metric_card(
             title="Prevented Feed Waste",
-            value=f"{saved_feed_kg:.1f} kg/day",
-            subtitle="Intended reduction of unconsumed waste",
-            benchmark_ref="Mitigates Organic Decay",
+            value=f"{saved_feed:.1f} kg/day",
+            subtitle="Intended reduction of unconsumed feed",
+            benchmark_ref="Water Quality Preservation",
             icon="🛡️",
-            accent="success" if saved_feed_kg > 0 else "aqua",
+            accent="success" if saved_feed > 0 else "aqua",
         )
 
     st.caption(
-        "**Feed Waste Reduction Principle:** Lowering feed inputs during environmental stress (low DO, high ammonia, or thermal extremes) "
-        "is intended to prevent unconsumed feed pellets from settling and decomposing into organic sludge. "
-        "This is presented as an intended farm management benefit, not a guaranteed biological cure."
+        f"**Dynamic Adjustment Rationale:** At simulated DO = `{curr_do:.2f} mg/L` and NH₃ = `{curr_nh3:.4f} mg/L`, "
+        f"the feeding recommendation engine cuts feed by **{pct_cut:.0f}%** ({saved_feed:.1f} kg prevented waste). "
+        "Intended benefit: Prevents unconsumed feed from decomposing into toxic ammonia and worsening hypoxia."
     )
 
-    with st.expander("Detailed Causal Explanations & Throttle Multipliers", expanded=True):
-        st.markdown(
-            f"- **Dissolved Oxygen Throttle:** `{throttles.get('do_multiplier', 1.0) * 100:.0f}%` multiplier ({throttles.get('do_status')})\n"
-            f"- **Ammonia Throttle:** `{throttles.get('ammonia_multiplier', 1.0) * 100:.0f}%` multiplier ({throttles.get('ammonia_status')})\n"
-            f"- **Temperature Throttle:** `{throttles.get('temperature_multiplier', 1.0) * 100:.0f}%` multiplier\n"
-            f"- **Negative Scope:** Somatic body weight persistence benchmark only; **NOT total harvest yield** or individual fish biomass."
-        )
-        for exp in res_feed.get("advisory_explanations", []):
-            st.markdown(f"• {exp}")
+    # Log to session prediction history
+    log_prediction_event(
+        analysis_type=f"Live Simulation ({farm_type})",
+        container_id=f"Simulated {container_label}",
+        data_source="benchmark_simulation (Quarantined)",
+        is_simulated=True,
+        results_summary=f"Sim Hour {current_step.get('hour', 0)}: DO={curr_do:.2f}, NH3={curr_nh3:.4f}, Feed Cut={pct_cut:.0f}%",
+        details=current_step,
+        farm_type=farm_type,
+    )
 
-    # ── Synthetic Reference Dataset Explorer ──────────────────────────
+    # ── Synthetic Reference Dataset Explorer (iot_water_model_v2.csv) ──
     st.markdown("---")
     st.subheader("Synthetic Reference Series (iot_water_model_v2.csv)")
     st.caption(
@@ -423,6 +509,7 @@ def render_page() -> None:
             - **Isolation Integrity:** Simulated scenarios are purely in-memory mathematical demonstrations. They are never written to `processed_data_v2/`, never logged as real pond records, and never used to calculate operational benchmarks.
             - **Operational Prohibition:** Real farm management, feeding adjustments, or aeration triggers must NEVER be based on simulated scenario outputs (`operational_use_permitted = False`).
             - **Zero Hardware Actuation:** The simulation environment operates in strict software isolation with zero actuator commands (`is_automatic_control = False`).
+            - **Quarantine Tag:** `SIMULATED_SCENARIO_ONLY` | `PROHIBITED`.
             """
         )
 

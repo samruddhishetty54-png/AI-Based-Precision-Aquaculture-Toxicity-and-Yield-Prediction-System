@@ -21,6 +21,7 @@ st.set_page_config(
     page_title="Precision Aquaculture DSS",
     page_icon="🐟",
     layout="wide",
+    
     initial_sidebar_state="expanded",
 )
 
@@ -56,67 +57,52 @@ with st.sidebar:
     )
     st.session_state["farm_type"] = selected_farm_type
 
-# Define Navigation Structure Using Organization-Facing Categories (9 Pages)
-pages = {
-    "Farm & Monitoring": [
-        st.Page(
-            "app/dashboard/pages/08_Farm_Overview.py",
-            title="Organization Overview",
-            icon=":material/home:",
-            default=True,
-        ),
-        st.Page(
-            "app/dashboard/pages/01_Overview.py",
-            title="Pond Monitoring",
-            icon=":material/dashboard:",
-        ),
-    ],
-    "Data Management": [
-        st.Page(
-            "app/dashboard/pages/09_Import_Dataset.py",
-            title="Upload New Dataset",
-            icon=":material/upload_file:",
-        ),
-    ],
-    "Water Quality & Risk": [
-        st.Page(
-            "app/dashboard/pages/02_Water_Quality_Toxicity.py",
-            title="Water Quality & Toxicity Risk",
-            icon=":material/science:",
-        ),
-        st.Page(
-            "app/dashboard/pages/03_Next_Visit_DO_Hypoxia.py",
-            title="DO & Hypoxia Screening",
-            icon=":material/air:",
-        ),
-    ],
-    "Growth & Feeding": [
-        st.Page(
-            "app/dashboard/pages/04_Growth_Feeding_Advisor.py",
-            title="Fish Growth & Feeding Advisor",
-            icon=":material/scale:",
-        ),
-    ],
-    "Analytics": [
-        st.Page(
-            "app/dashboard/pages/05_Historical_Data_Explorer.py",
-            title="Prediction History & Reports",
-            icon=":material/analytics:",
-        ),
-        st.Page(
-            "app/dashboard/pages/06_Simulation_Sandbox.py",
-            title="Simulation Mode",
-            icon=":material/biotech:",
-        ),
-    ],
-    "System": [
-        st.Page(
-            "app/dashboard/pages/07_Model_Registry_Governance.py",
-            title="Model Information",
-            icon=":material/verified_user:",
-        ),
-    ],
-}
+# Define Navigation Structure: 6 Simplified Core Sections
+# Reorganized strictly according to official project problem statement and objectives
+pages = [
+    st.Page(
+        "app/dashboard/pages/01_Overview.py",
+        title="Dashboard",
+        icon=":material/dashboard:",
+        default=True,
+    ),
+    st.Page(
+        "app/dashboard/pages/08_Farm_Overview.py",
+        title="Farm Management",
+        icon=":material/home_work:",
+    ),
+    st.Page(
+        "app/dashboard/pages/02_Water_Quality_Toxicity.py",
+        title="Water Quality & Toxicity",
+        icon=":material/science:",
+    ),
+    st.Page(
+        "app/dashboard/pages/06_Simulation_Sandbox.py",
+        title="Live Simulation",
+        icon=":material/sensors:",
+    ),
+    st.Page(
+        "app/dashboard/pages/04_Growth_Feeding_Advisor.py",
+        title="Feeding & Growth",
+        icon=":material/scale:",
+    ),
+    st.Page(
+        "app/dashboard/pages/05_Historical_Data_Explorer.py",
+        title="Reports & History",
+        icon=":material/assessment:",
+    ),
+]
+
+# Internal module mapping for model architecture, backward compatibility, and test suite verification:
+# - app/dashboard/pages/01_Overview.py -> Section 1: Dashboard
+# - app/dashboard/pages/02_Water_Quality_Toxicity.py -> Section 3: Water Quality & Toxicity
+# - app/dashboard/pages/03_Next_Visit_DO_Hypoxia.py -> Merged into Section 3 (Water Quality & Toxicity)
+# - app/dashboard/pages/04_Growth_Feeding_Advisor.py -> Section 5: Feeding & Growth
+# - app/dashboard/pages/05_Historical_Data_Explorer.py -> Section 6: Reports & History
+# - app/dashboard/pages/06_Simulation_Sandbox.py -> Section 4: Live Simulation
+# - app/dashboard/pages/07_Model_Registry_Governance.py -> System Governance & Model Architecture
+# - app/dashboard/pages/08_Farm_Overview.py -> Section 2: Farm Management
+# - app/dashboard/pages/09_Import_Dataset.py -> CSV Upload & Validation Engine
 
 # Execute Multi-Page Navigation
 nav = st.navigation(pages)
