@@ -188,6 +188,31 @@ class TestUploadProcessorAndProductRedesign(unittest.TestCase):
         self.assertIn("08_Farm_Overview.py", launcher_src)
         self.assertIn("09_Import_Dataset.py", launcher_src)
 
+    def test_indoor_tank_id_canonical_mapping(self):
+        """Indoor dataset with 'tank_id' maps cleanly to canonical container identifier."""
+        csv_text = "tank_id,datetime,dissolved_oxygen_mg_l,ph,temp_c\nTANK_01,2026-03-01,6.5,7.4,26.0\n"
+        df, err = parse_uploaded_csv(csv_text.encode("utf-8"), "indoor_tanks.csv")
+        self.assertIsNone(err)
+        mapping, _ = suggest_column_mapping(list(df.columns))
+        self.assertEqual(mapping["pond_id"], "tank_id")
+        val = validate_mapped_dataset(df, mapping, filename="indoor_tanks.csv")
+        self.assertTrue(val["is_valid"])
+        self.assertEqual(val["pond_count"], 1)
+
+    def test_free_platform_statement_and_no_subscription(self):
+        """Verify free platform statement and absence of paid subscription concepts."""
+        launcher_src = (self.repo_root / "dashboard.py").read_text(encoding="utf-8")
+        self.assertIn("Precision AquaDSS is a free aquaculture decision-support platform", launcher_src)
+        self.assertIn("All available features are accessible without subscription charges", launcher_src)
+        for forbidden in ["subscription plan", "pricing page", "upgrade to pro", "monthly fee", "$/mo"]:
+            self.assertNotIn(forbidden, launcher_src.lower())
+
+    def test_farm_type_selection_options(self):
+        """Verify farm type selector has both Indoor and Outdoor aquaculture options."""
+        launcher_src = (self.repo_root / "dashboard.py").read_text(encoding="utf-8")
+        self.assertIn("Outdoor Aquaculture", launcher_src)
+        self.assertIn("Indoor Aquaculture", launcher_src)
+
 
 if __name__ == "__main__":
     unittest.main()

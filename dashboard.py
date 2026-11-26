@@ -32,6 +32,30 @@ logo_path = repo_root / "app" / "dashboard" / "assets" / "logo.svg"
 if logo_path.exists():
     st.logo(str(logo_path), size="large")
 
+# Farm Environment Selection (Indoor vs Outdoor Aquaculture)
+with st.sidebar:
+    st.markdown(
+        """
+        <div style="margin-top: 0.2rem; margin-bottom: 0.25rem;">
+            <div style="font-size: 0.70rem; font-weight: 700; color: #43BFC0 !important; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.2rem;">
+                FARM ENVIRONMENT
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    farm_type_options = ["Outdoor Aquaculture", "Indoor Aquaculture"]
+    current_ft = st.session_state.get("farm_type", "Outdoor Aquaculture")
+    selected_farm_type = st.radio(
+        "Farm Environment",
+        options=farm_type_options,
+        index=0 if current_ft == "Outdoor Aquaculture" else 1,
+        help="Outdoor: Open ponds exposed to weather.\nIndoor: Tanks and controlled recirculating systems.",
+        label_visibility="collapsed",
+        key="app_farm_type_selector",
+    )
+    st.session_state["farm_type"] = selected_farm_type
+
 # Define Navigation Structure Using Organization-Facing Categories (9 Pages)
 pages = {
     "Farm & Monitoring": [
@@ -110,6 +134,10 @@ with st.sidebar:
                 <div style="font-size: 0.71rem; font-weight: 500; color: #D7F3F0 !important; margin-top: 0.1rem;">
                     Aquaculture AI Decision Support
                 </div>
+            </div>
+            <div style="background-color: rgba(38, 155, 114, 0.15); border: 1px solid rgba(67, 191, 192, 0.35); border-radius: 8px; padding: 0.55rem 0.7rem; margin-bottom: 0.6rem; font-size: 0.70rem; color: #D7F3F0 !important; line-height: 1.4;">
+                <strong style="color: #43BFC0 !important; display: block; margin-bottom: 0.15rem;">Free Decision-Support Platform</strong>
+                Precision AquaDSS is a free aquaculture decision-support platform. All available features are accessible without subscription charges.
             </div>
             <div style="background-color: rgba(255, 255, 255, 0.06); border: 1px solid rgba(220, 233, 230, 0.15); border-radius: 8px; padding: 0.6rem 0.75rem; font-size: 0.71rem; color: #D5E4E3 !important; line-height: 1.45; font-weight: 500;">
                 <span style="color: #43BFC0 !important; font-weight: 700; display: block; margin-bottom: 0.25rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;">System Safeguards</span>

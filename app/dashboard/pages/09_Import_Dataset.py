@@ -22,7 +22,15 @@ import streamlit as st
 from app.dashboard.components.banners import render_decision_support_banner
 from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.metric_card import render_metric_card
-from app.dashboard.utils.helpers import format_float
+from app.dashboard.utils.helpers import (
+    format_float,
+    get_active_farm_type,
+    get_container_label,
+    get_container_id_label,
+    get_farm_type_disclaimer,
+    log_prediction_event,
+    FREE_PLATFORM_NOTICE,
+)
 from app.dashboard.utils.styles import PALETTE, inject_custom_css
 from app.dashboard.utils.upload_processor import (
     CANONICAL_FIELDS,
@@ -40,28 +48,38 @@ def render_page() -> None:
     """Render the Dataset Import & Analysis Workspace."""
     inject_custom_css()
 
+    farm_type = get_active_farm_type()
+    container_label = get_container_label(farm_type)
+    container_id_label = get_container_id_label(farm_type)
+
     render_page_header(
         title="Dataset Import & Analysis Workspace",
-        subtitle="Upload pond observation CSV files, validate schema and units, run compatible models, and export results.",
+        subtitle=f"Upload {container_label.lower()} observation CSV files, validate schema and units, run compatible models, and export results ({farm_type}).",
         category_key="ADVISORY",
     )
 
     st.markdown(
         """
-        <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem;">
-            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.25rem 0.75rem; font-size:0.78rem; font-weight:700; color:#173747;">1. Upload CSV</span>
-            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.25rem 0.75rem; font-size:0.78rem; font-weight:700; color:#173747;">2. Preview</span>
-            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.25rem 0.75rem; font-size:0.78rem; font-weight:700; color:#173747;">3. Map Columns</span>
-            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.25rem 0.75rem; font-size:0.78rem; font-weight:700; color:#173747;">4. Validate</span>
-            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.25rem 0.75rem; font-size:0.78rem; font-weight:700; color:#173747;">5. Run Analysis</span>
-            <span style="background:#E3F5F3; border:1px solid #AEE2DC; border-radius:9999px; padding:0.25rem 0.75rem; font-size:0.78rem; font-weight:700; color:#087F72;">6. Export Results</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem;">
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">1. Upload CSV</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">2. Preview Dataset</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">3. View Columns</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">4. Map Columns</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">5. Validate Data</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">6. Missing / Bounds Audit</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">7. Model Compatibility</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">8. Select Analyses</span>
+            <span style="background:#FFFFFF; border:1px solid #DCE9E6; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#173747;">9. Run Analysis</span>
+            <span style="background:#E3F5F3; border:1px solid #AEE2DC; border-radius:9999px; padding:0.18rem 0.6rem; font-size:0.73rem; font-weight:700; color:#087F72;">10. Results & CSV Export</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    st.info(f"**Operational Scope ({farm_type}):** {get_farm_type_disclaimer(farm_type)}")
+
     # Step 1: CSV Upload
-    st.markdown("### 1. Upload Pond Observation Dataset (CSV)")
+    st.markdown(f"### 1. Upload {container_label} Observation Dataset (CSV)")
     st.caption(
         "Supported format: `.csv` (UTF-8 or Latin-1). Excel `.xlsx` upload is disabled because `openpyxl` "
         "is not installed in this environment. Uploaded files remain isolated in your current session."
@@ -311,20 +329,30 @@ def render_page() -> None:
             "selected_pond": pond_filter or "All Records",
             "selected_date": selected_date_label,
         }
-        history = st.session_state.setdefault("prediction_history", [])
-        history.append({
-            "executed_at": run_summary["executed_at"],
-            "filename": uploaded_file.name,
-            "pond_scope": pond_filter or "All Records",
-            "date_scope": selected_date_label,
-            "analyzed_rows": run_summary["analyzed_rows"],
-            "models_executed": ", ".join(selected_models),
-            "median_do_mg_l": float(results_df["do_mg_l"].median()) if "do_mg_l" in results_df and results_df["do_mg_l"].notna().any() else None,
-            "median_emerson_nh3_mg_l": float(results_df["emerson_nh3_mg_l"].median()) if "emerson_nh3_mg_l" in results_df and results_df["emerson_nh3_mg_l"].notna().any() else None,
-            "median_mortality_score": float(results_df["exp2_mortality_risk_score"].median()) if "exp2_mortality_risk_score" in results_df and results_df["exp2_mortality_risk_score"].notna().any() else None,
-            "median_next_visit_nh3_risk": float(results_df["exp3_next_visit_nh3_risk"].median()) if "exp3_next_visit_nh3_risk" in results_df and results_df["exp3_next_visit_nh3_risk"].notna().any() else None,
-            "median_recommended_feed_kg": float(results_df["recommended_feed_kg"].median()) if "recommended_feed_kg" in results_df and results_df["recommended_feed_kg"].notna().any() else None,
-        })
+        # Standardized history logging
+        batch_summary = (
+            f"Analyzed {run_summary['analyzed_rows']} rows across models: {', '.join(selected_models)}. "
+            f"Scope: {pond_filter or 'All Records'} ({selected_date_label})."
+        )
+        log_prediction_event(
+            analysis_type=f"Batch Upload Analysis ({len(selected_models)} models)",
+            container_id=str(pond_filter or "All Records"),
+            data_source=f"Uploaded CSV ({uploaded_file.name})",
+            is_simulated=bool(validation.get("is_simulated", False)),
+            results_summary=batch_summary,
+            details={
+                "executed_at": run_summary["executed_at"],
+                "filename": uploaded_file.name,
+                "analyzed_rows": run_summary["analyzed_rows"],
+                "models_executed": ", ".join(selected_models),
+                "median_do_mg_l": float(results_df["do_mg_l"].median()) if "do_mg_l" in results_df and results_df["do_mg_l"].notna().any() else None,
+                "median_emerson_nh3_mg_l": float(results_df["emerson_nh3_mg_l"].median()) if "emerson_nh3_mg_l" in results_df and results_df["emerson_nh3_mg_l"].notna().any() else None,
+                "median_mortality_score": float(results_df["exp2_mortality_risk_score"].median()) if "exp2_mortality_risk_score" in results_df and results_df["exp2_mortality_risk_score"].notna().any() else None,
+                "median_next_visit_nh3_risk": float(results_df["exp3_next_visit_nh3_risk"].median()) if "exp3_next_visit_nh3_risk" in results_df and results_df["exp3_next_visit_nh3_risk"].notna().any() else None,
+                "median_recommended_feed_kg": float(results_df["recommended_feed_kg"].median()) if "recommended_feed_kg" in results_df and results_df["recommended_feed_kg"].notna().any() else None,
+            },
+            farm_type=farm_type,
+        )
 
     # Step 6: Results Workspace
     res_state = st.session_state.get("uploaded_results_state")

@@ -33,6 +33,11 @@ from app.dashboard.utils.helpers import (
     format_percentage,
     validate_defensive_bounds,
     detect_simulation_source,
+    get_active_farm_type,
+    get_container_label,
+    get_container_id_label,
+    get_farm_type_disclaimer,
+    log_prediction_event,
 )
 from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.banners import (
@@ -284,8 +289,13 @@ def render_page() -> None:
         st.error(f"Error evaluating feeding advisory: {exc}")
         return
 
+    farm_type = get_active_farm_type()
+    container_label = get_container_label(farm_type)
+    container_id_label = get_container_id_label(farm_type)
+
     # Section 2: Analysis Results (Compact SaaS Layout)
-    render_section_bar("Weight Benchmark & Provisional Feeding Advisory Results")
+    render_section_bar(f"Weight Benchmark & Provisional Feeding Advisory Results ({farm_type})")
+    st.info(f"**Operational Scope ({farm_type}):** {get_farm_type_disclaimer(farm_type)}")
 
     advisory_action = res_feed.get("advisory_action", "UNKNOWN")
     rec_feed = res_feed.get("recommended_feed_kg")
@@ -293,6 +303,27 @@ def render_page() -> None:
     reduction_pct = res_feed.get("reduction_percentage", 0.0)
     throttles = res_feed.get("throttling_factors", {})
     explanations = res_feed.get("advisory_explanations", [])
+
+    # Log to session prediction history
+    summary_txt = (
+        f"Next Weight: {res_weight.get('predicted_next_weight_g', current_weight_val):.1f} g | "
+        f"Feed: {rec_feed:.1f} kg/day ({reduction_pct:.0f}% cut)"
+        if rec_feed is not None else "Cohort Persistence Benchmark"
+    )
+    log_prediction_event(
+        analysis_type="Fish Growth & Feeding Advisor",
+        container_id=str(selected_pond),
+        data_source="Manual Field Entry" if selected_pond == "Manual Entry" else "Historical Dataset",
+        is_simulated=is_simulated,
+        results_summary=summary_txt,
+        details={
+            "next_weight_g": res_weight.get("predicted_next_weight_g"),
+            "recommended_feed_kg": rec_feed,
+            "reduction_percentage": reduction_pct,
+            "advisory_action": advisory_action,
+        },
+        farm_type=farm_type,
+    )
 
     wc1, wc2, wc3, wc4 = st.columns(4)
     with wc1:
@@ -329,6 +360,17 @@ def render_page() -> None:
             subtitle="NOT harvest biomass / kg/ha",
             benchmark_ref="0% total yield labels",
         )
+
+    # Feed Waste Reduction & Management Benefit Summary
+    if base_feed is not None and rec_feed is not None:
+        saved_feed = max(0.0, base_feed - rec_feed)
+        if saved_feed > 0:
+            st.info(
+                f"💡 **Intended Feed Waste Reduction Benefit:** Throttling daily feed from **{base_feed:.1f} kg** to **{rec_feed:.1f} kg** "
+                f"mitigates **{saved_feed:.1f} kg/day ({reduction_pct:.0f}%)** of potentially unconsumed pellets during water-quality stress. "
+                "This helps prevent organic sludge accumulation and excessive benthic microbial oxygen consumption. "
+                "(Presented as an intended farm management benefit, not a guaranteed biological cure)."
+            )
 
     # Expandable Technical Details & Governance
     with st.expander("Technical Details, Negative Scope & Heuristic Explanations", expanded=False):

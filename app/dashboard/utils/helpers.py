@@ -164,3 +164,103 @@ def get_registry_health_summary(registry: Any) -> Dict[str, Any]:
             "model_health": {},
             "registered_models": [],
         }
+
+
+# =======================================================================
+# Farm Type (Indoor / Outdoor) & Prediction History Logging Utilities
+# =======================================================================
+
+FARM_TYPES = ["Outdoor Aquaculture", "Indoor Aquaculture"]
+DEFAULT_FARM_TYPE = "Outdoor Aquaculture"
+FREE_PLATFORM_NOTICE = (
+    "Precision AquaDSS is a free aquaculture decision-support platform. "
+    "All available features are accessible without subscription charges."
+)
+
+
+def get_active_farm_type() -> str:
+    """Return the currently selected farm type from session state."""
+    try:
+        import streamlit as st
+        return st.session_state.get("farm_type", DEFAULT_FARM_TYPE)
+    except Exception:
+        return DEFAULT_FARM_TYPE
+
+
+def get_container_label(farm_type: Optional[str] = None) -> str:
+    """Return 'Tank / System' for indoor aquaculture or 'Pond' for outdoor."""
+    f_type = farm_type or get_active_farm_type()
+    return "Tank / System" if "indoor" in f_type.lower() else "Pond"
+
+
+def get_container_id_label(farm_type: Optional[str] = None) -> str:
+    """Return 'Tank Identifier' for indoor or 'Pond Identifier' for outdoor."""
+    f_type = farm_type or get_active_farm_type()
+    return "Tank Identifier" if "indoor" in f_type.lower() else "Pond Identifier"
+
+
+def get_farm_type_disclaimer(farm_type: Optional[str] = None) -> str:
+    """Return scientific applicability disclaimer based on farm type."""
+    f_type = farm_type or get_active_farm_type()
+    if "indoor" in f_type.lower():
+        return (
+            "Indoor Aquaculture Mode Active: Models were trained on outdoor commercial pond observation logs. "
+            "Predictions for indoor recirculating / tank systems serve as exploratory decision-support proxies "
+            "and require independent manual or sensor verification."
+        )
+    return (
+        "Outdoor Aquaculture Mode Active: Observations reflect open commercial pond conditions subject to "
+        "weather exposure, diurnal cycling, and multi-week routine visits (06:00–08:30 AM)."
+    )
+
+
+def log_prediction_event(
+    analysis_type: str,
+    container_id: str,
+    data_source: str,
+    is_simulated: bool,
+    results_summary: str,
+    details: Optional[Dict[str, Any]] = None,
+    farm_type: Optional[str] = None,
+) -> None:
+    """Log an analysis run or prediction event to session history.
+
+    Maintains session-level traceability across all 9 dashboard pages.
+    """
+    try:
+        import streamlit as st
+        import datetime
+
+        history = st.session_state.setdefault("prediction_history", [])
+        active_farm = farm_type or get_active_farm_type()
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        entry = {
+            "timestamp": now_str,
+            "farm_type": active_farm,
+            "analysis_type": analysis_type,
+            "container_id": container_id,
+            "data_source": data_source,
+            "is_simulated": "YES (Simulation)" if is_simulated else "NO (Field/Real)",
+            "results_summary": results_summary,
+        }
+        if details:
+            for k, v in details.items():
+                if k not in entry:
+                    entry[k] = v
+
+        # Deduplicate identical recent entry in the same session
+        if history:
+            last = history[-1]
+            if (
+                last.get("analysis_type") == entry["analysis_type"]
+                and last.get("container_id") == entry["container_id"]
+                and last.get("results_summary") == entry["results_summary"]
+                and last.get("is_simulated") == entry["is_simulated"]
+            ):
+                return
+
+        history.append(entry)
+    except Exception:
+        pass
+

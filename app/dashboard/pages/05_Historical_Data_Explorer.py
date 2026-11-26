@@ -15,7 +15,14 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from app.dashboard.utils.styles import inject_custom_css, PALETTE
-from app.dashboard.utils.helpers import format_float, format_percentage
+from app.dashboard.utils.helpers import (
+    format_float,
+    format_percentage,
+    get_active_farm_type,
+    get_container_label,
+    get_container_id_label,
+    get_farm_type_disclaimer,
+)
 from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.banners import (
     render_decision_support_banner,
@@ -230,9 +237,13 @@ def render_page() -> None:
     """Render the Historical Field Observations Explorer page."""
     inject_custom_css()
 
+    farm_type = get_active_farm_type()
+    container_label = get_container_label(farm_type)
+    container_id_label = get_container_id_label(farm_type)
+
     render_page_header(
-        title="Historical Field Observations Explorer",
-        subtitle="Longitudinal multi-week field inspection records across monitored commercial ponds.",
+        title="Prediction History & Field Reports",
+        subtitle=f"Longitudinal multi-week field inspection records and audited session prediction reports ({farm_type}).",
         category_key="HISTORICAL",
     )
 
@@ -241,106 +252,158 @@ def render_page() -> None:
     with st.expander("Decision-Support & Sampling Context Notices", expanded=False):
         render_decision_support_banner()
         render_multi_week_observation_banner()
+        st.info(f"**Operational Scope ({farm_type}):** {get_farm_type_disclaimer(farm_type)}")
 
-    # --- Session Prediction History ---
-    pred_history = st.session_state.get("prediction_history", [])
-    with st.expander(f"Session Prediction History ({len(pred_history)} run(s))", expanded=bool(pred_history)):
+    tab_history, tab_baseline = st.tabs([
+        "📑 Session Prediction History & Audited Reports",
+        f"📊 {container_label} Field Observations & Baselines",
+    ])
+
+    with tab_history:
+        pred_history = st.session_state.get("prediction_history", [])
+        total_runs = len(pred_history)
+        sim_runs = sum(1 for p in pred_history if "YES" in str(p.get("is_simulated", "")))
+        field_runs = total_runs - sim_runs
+
+        h1, h2, h3, h4 = st.columns(4)
+        with h1:
+            render_metric_card("Total Analyses Logged", f"{total_runs}", "Session records", icon="📑", accent="teal")
+        with h2:
+            render_metric_card("Field / Uploaded Runs", f"{field_runs}", "Operational predictions", icon="🐟", accent="aqua")
+        with h3:
+            render_metric_card("Simulation Runs", f"{sim_runs}", "Quarantined benchmarks", icon="🧪", accent="warning" if sim_runs > 0 else "success")
+        with h4:
+            render_metric_card("Active Environment", farm_type, "Selected in sidebar", icon="🏢", accent="teal")
+
         if pred_history:
             hist_df = pd.DataFrame(pred_history)
-            st.dataframe(hist_df, use_container_width=True, hide_index=True)
+
+            f_col1, f_col2 = st.columns(2)
+            with f_col1:
+                farm_filter = st.selectbox(
+                    "Filter by Farm Type:",
+                    options=["All Environments"] + sorted(hist_df["farm_type"].dropna().unique().tolist()),
+                    index=0,
+                    key="hist_filter_farm",
+                )
+            with f_col2:
+                sim_filter = st.selectbox(
+                    "Filter by Simulation Status:",
+                    options=["All Records", "Field / Real Predictions Only", "Simulated Scenarios Only"],
+                    index=0,
+                    key="hist_filter_sim",
+                )
+
+            filtered_hist = hist_df.copy()
+            if farm_filter != "All Environments":
+                filtered_hist = filtered_hist[filtered_hist["farm_type"] == farm_filter]
+            if sim_filter == "Field / Real Predictions Only":
+                filtered_hist = filtered_hist[~filtered_hist["is_simulated"].astype(str).str.contains("YES")]
+            elif sim_filter == "Simulated Scenarios Only":
+                filtered_hist = filtered_hist[filtered_hist["is_simulated"].astype(str).str.contains("YES")]
+
+            st.dataframe(filtered_hist, use_container_width=True, hide_index=True)
+
+            csv_data = filtered_hist.to_csv(index=False).encode("utf-8")
             st.download_button(
                 label="Download Prediction History (CSV)",
-                data=hist_df.to_csv(index=False).encode("utf-8"),
+                data=csv_data,
                 file_name="precision_aquadss_prediction_history.csv",
                 mime="text/csv",
                 key="download_pred_history_btn",
+                type="primary",
             )
         else:
-            st.info("No batch upload analyses have been executed in this session yet. Use **Upload New Dataset** to run predictions.")
+            st.info(
+                "No prediction runs recorded yet in this session. Use **Water Quality & Toxicity Risk**, "
+                "**DO & Hypoxia Screening**, **Fish Growth & Feeding Advisor**, or **Upload New Dataset** to execute analyses."
+            )
 
-    # --- Inputs: Dataset selector + pond filter ---
-    col_sel, col_pond = st.columns([2, 1])
-    with col_sel:
-        selected_key = st.selectbox(
-            "Select Field Dataset to Inspect:",
-            options=list(AVAILABLE_DATASETS.keys()),
-            format_func=lambda k: f"{AVAILABLE_DATASETS[k]} ({k})",
-            index=0,
-        )
+    with tab_baseline:
+        # --- Inputs: Dataset selector + pond filter ---
+        col_sel, col_pond = st.columns([2, 1])
+        with col_sel:
+            selected_key = st.selectbox(
+                f"Select Field Dataset to Inspect ({container_label} Basis):",
+                options=list(AVAILABLE_DATASETS.keys()),
+                format_func=lambda k: f"{AVAILABLE_DATASETS[k]} ({k})",
+                index=0,
+            )
 
-    # Load dataset safely via core data manager
-    try:
-        df = load_dataset(selected_key, use_cache=True)
-    except Exception as exc:
-        st.error(f"Failed to load dataset '{selected_key}': {exc}")
-        return
+        # Load dataset safely via core data manager
+        try:
+            df = load_dataset(selected_key, use_cache=True)
+        except Exception as exc:
+            st.error(f"Failed to load dataset '{selected_key}': {exc}")
+            return
 
-    with col_pond:
-        if "pond_id" in df.columns:
-            all_ponds = sorted(list(df["pond_id"].dropna().unique()))
-            pond_choice = st.selectbox("Pond ID:", options=["All Ponds"] + all_ponds, index=0)
-        else:
-            pond_choice = "All Ponds"
+        with col_pond:
+            if "pond_id" in df.columns:
+                all_ponds = sorted(list(df["pond_id"].dropna().unique()))
+                pond_choice = st.selectbox(f"{container_id_label}:", options=[f"All {container_label}s"] + all_ponds, index=0)
+            else:
+                pond_choice = f"All {container_label}s"
 
-    # --- Results: KPI metric cards ---
-    meta = DATASET_METADATA.get(selected_key, {})
-    total_records = len(df)
-    unique_ponds = df["pond_id"].nunique() if "pond_id" in df.columns else 0
-    total_cells = df.size
-    total_na = int(df.isna().sum().sum())
-    na_pct = (total_na / total_cells * 100.0) if total_cells > 0 else 0.0
+        # --- Results: KPI metric cards ---
+        meta = DATASET_METADATA.get(selected_key, {})
+        total_records = len(df)
+        unique_ponds = df["pond_id"].nunique() if "pond_id" in df.columns else 0
+        total_cells = df.size
+        total_na = int(df.isna().sum().sum())
+        na_pct = (total_na / total_cells * 100.0) if total_cells > 0 else 0.0
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        render_metric_card(
-            title="Total Inspections",
-            value=f"{total_records:,}",
-            subtitle=f"{meta.get('title', selected_key)}",
-            benchmark_ref="Cleaned Field Data v2",
-            icon="📋",
-            accent="teal",
-        )
-    with c2:
-        render_metric_card(
-            title="Monitored Ponds",
-            value=f"{unique_ponds} Ponds" if unique_ponds > 0 else "N/A",
-            subtitle="Commercial pond cohort",
-            benchmark_ref="AP Farm Network",
-            icon="🐟",
-            accent="aqua",
-        )
-    with c3:
-        render_metric_card(
-            title="Overall Missingness",
-            value=f"{na_pct:.1f}%",
-            subtitle="Preserved natural NaNs",
-            benchmark_ref="Zero Silent Zero-Filling",
-            icon="🔍",
-            accent="warning" if na_pct > 30 else "success",
-        )
-    with c4:
-        render_metric_card(
-            title="Data Nature",
-            value="Field Logs",
-            subtitle="Irregular multi-week visits",
-            benchmark_ref="3 to 45 Day Revisits",
-            icon="🗓️",
-            accent="aqua",
-        )
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            render_metric_card(
+                title="Total Inspections",
+                value=f"{total_records:,}",
+                subtitle=f"{meta.get('title', selected_key)}",
+                benchmark_ref="Cleaned Field Data v2",
+                icon="📋",
+                accent="teal",
+            )
+        with c2:
+            render_metric_card(
+                title=f"Monitored {container_label}s",
+                value=f"{unique_ponds} {container_label}s" if unique_ponds > 0 else "N/A",
+                subtitle=f"Commercial {container_label.lower()} cohort",
+                benchmark_ref="AP Farm Network",
+                icon="🐟",
+                accent="aqua",
+            )
+        with c3:
+            render_metric_card(
+                title="Overall Missingness",
+                value=f"{na_pct:.1f}%",
+                subtitle="Preserved natural NaNs",
+                benchmark_ref="Zero Silent Zero-Filling",
+                icon="🔍",
+                accent="warning" if na_pct > 30 else "success",
+            )
+        with c4:
+            render_metric_card(
+                title="Data Nature",
+                value="Field Logs",
+                subtitle="Irregular multi-week visits",
+                benchmark_ref="3 to 45 Day Revisits",
+                icon="🗓️",
+                accent="aqua",
+            )
 
-    # --- Trajectory Chart ---
-    render_section_bar(f"Longitudinal Trajectory: {AVAILABLE_DATASETS[selected_key]}")
-    _render_trajectory_chart(df, selected_key, pond_choice)
+        # --- Trajectory Chart ---
+        selected_pond_param = pond_choice if pond_choice != f"All {container_label}s" else "All Ponds"
+        render_section_bar(f"Longitudinal Trajectory: {AVAILABLE_DATASETS[selected_key]}")
+        _render_trajectory_chart(df, selected_key, selected_pond_param)
 
-    # --- Missingness & Records ---
-    with st.expander("📊 Missingness & Parameter Distribution", expanded=False):
-        st.caption("Detailed column-wise inventory showing true sampling missingness (NaNs preserved).")
-        _render_missingness_summary(df)
+        # --- Missingness & Records ---
+        with st.expander("📊 Missingness & Parameter Distribution", expanded=False):
+            st.caption("Detailed column-wise inventory showing true sampling missingness (NaNs preserved).")
+            _render_missingness_summary(df)
 
-    with st.expander("📋 Field Inspection Records Preview", expanded=False):
-        st.caption(f"Showing up to 100 records for inspection review (Total: {len(df):,} rows).")
-        display_df = df if pond_choice == "All Ponds" or "pond_id" not in df.columns else df[df["pond_id"] == pond_choice]
-        st.dataframe(display_df.head(100), use_container_width=True)
+        with st.expander(f"📋 Field Inspection Records Preview ({container_label} Scope)", expanded=False):
+            st.caption(f"Showing up to 100 records for inspection review (Total: {len(df):,} rows).")
+            display_df = df if pond_choice == f"All {container_label}s" or "pond_id" not in df.columns else df[df["pond_id"] == pond_choice]
+            st.dataframe(display_df.head(100), use_container_width=True)
 
     # --- Technical Details: Sampling context & immutability ---
     with st.expander("ℹ️ Field Sampling Context & Immutability Rules", expanded=False):

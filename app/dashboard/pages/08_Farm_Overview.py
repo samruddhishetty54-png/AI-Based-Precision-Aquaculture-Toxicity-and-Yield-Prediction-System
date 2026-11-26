@@ -15,7 +15,14 @@ import streamlit as st
 from app.core.data_manager import load_dataset
 from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.metric_card import render_metric_card
-from app.dashboard.utils.helpers import format_float
+from app.dashboard.utils.helpers import (
+    format_float,
+    get_active_farm_type,
+    get_container_label,
+    get_container_id_label,
+    get_farm_type_disclaimer,
+    FREE_PLATFORM_NOTICE,
+)
 from app.dashboard.utils.styles import PALETTE, inject_custom_css
 
 
@@ -36,10 +43,39 @@ def render_page() -> None:
     """Render the Organization Overview landing page."""
     inject_custom_css()
 
+    farm_type = get_active_farm_type()
+    container_label = get_container_label(farm_type)
+    container_id_label = get_container_id_label(farm_type)
+
     render_page_header(
         title="Organization Overview",
-        subtitle="Pond water-quality analytics, toxicity risk screening, and decision-support workspace.",
+        subtitle=f"{farm_type} water-quality analytics, toxicity risk screening, and decision-support workspace.",
         category_key="HISTORICAL",
+    )
+
+    # 100% Free Platform & Farm Type Mode Banner
+    farm_disclaimer = get_farm_type_disclaimer(farm_type)
+    st.markdown(
+        f"""
+        <div style="background-color: #FFFFFF; border: 1px solid #DCE9E6; border-left: 4px solid #087F72; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.9rem; box-shadow: 0 1px 4px rgba(16,44,58,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.35rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-weight: 800; font-size: 0.85rem; color: #173747;">🏢 Mode: {farm_type}</span>
+                    <span style="background-color: #E3F6EE; color: #269B72; border: 1px solid #A6DEC8; font-size: 0.70rem; font-weight: 700; padding: 0.12rem 0.5rem; border-radius: 9999px;">
+                        100% FREE ACCESS
+                    </span>
+                </div>
+                <span style="font-size: 0.76rem; color: #087F72; font-weight: 600;">
+                    Zero subscription fees • All features unlocked
+                </span>
+            </div>
+            <div style="font-size: 0.78rem; color: #526873; line-height: 1.45;">
+                <strong>Platform Notice:</strong> {FREE_PLATFORM_NOTICE}<br>
+                <span style="color: #64748b;"><strong>Scientific Context:</strong> {farm_disclaimer}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     # Load Historical Datasets
@@ -69,8 +105,8 @@ def render_page() -> None:
 
     with sel_col2:
         selected_pond = st.selectbox(
-            "Pond Identifier",
-            options=["All Ponds in Scope"] + ponds_in_scope,
+            f"{container_id_label}",
+            options=[f"All {container_label}s in Scope"] + ponds_in_scope,
             index=0,
             key="farm_overview_pond",
         )
@@ -90,7 +126,8 @@ def render_page() -> None:
         else:
             date_range = None
 
-    if selected_pond != "All Ponds in Scope":
+    all_in_scope_label = f"All {container_label}s in Scope"
+    if selected_pond != all_in_scope_label:
         df_view = df_scoped[df_scoped["pond_id"].astype(str) == selected_pond]
         df_growth_view = df_growth[df_growth["pond_id"].astype(str) == selected_pond]
     else:
@@ -113,7 +150,7 @@ def render_page() -> None:
     if uploaded_state and uploaded_state.get("is_valid"):
         st.info(
             f"Active session CSV: **{uploaded_state.get('filename')}** "
-            f"({uploaded_state.get('total_rows', 0):,} rows, {uploaded_state.get('pond_count', 0)} pond(s)) — "
+            f"({uploaded_state.get('total_rows', 0):,} rows, {uploaded_state.get('pond_count', 0)} {container_label.lower()}(s)) — "
             "kept separate from historical records."
         )
 
@@ -134,10 +171,10 @@ def render_page() -> None:
     k1, k2, k3, k4 = st.columns(4)
     with k1:
         render_metric_card(
-            title="Ponds Monitored",
+            title=f"{container_label}s Monitored",
             value=f"{total_ponds_represented}",
             subtitle=f"{total_enrolled} enrolled | {df_view['region'].nunique()} region(s)",
-            benchmark_ref="Verified Pond IDs",
+            benchmark_ref=f"Verified {container_label} IDs",
             icon="🐟",
             accent="teal",
         )
@@ -359,19 +396,19 @@ def render_page() -> None:
                     x="pond_id",
                     y="median_do",
                     color="median_nh3",
-                    title="Pond-to-Pond Comparison (Lowest 15 Median DO)",
-                    labels={"pond_id": "Pond ID", "median_do": "Median DO (mg/L)", "median_nh3": "Median NH3"},
+                    title=f"{container_label} Comparison (Lowest 15 Median DO)",
+                    labels={"pond_id": f"{container_label} ID", "median_do": "Median DO (mg/L)", "median_nh3": "Median NH3"},
                     color_continuous_scale="Tealrose",
                 )
                 fig_comp.update_layout(template="plotly_white", height=320, margin=dict(l=20, r=20, t=42, b=20))
                 st.plotly_chart(fig_comp, use_container_width=True)
             else:
-                st.info("Select 'All Ponds in Scope' to compare multiple ponds side by side.")
+                st.info(f"Select 'All {container_label}s in Scope' to compare multiple {container_label.lower()}s side by side.")
 
     with tab_obs:
         obs_col, act_col = st.columns([1.4, 1])
         with obs_col:
-            st.markdown("#### Recent Pond Observations")
+            st.markdown(f"#### Recent {container_label} Observations")
             recent_cols = [
                 "pond_id",
                 "region",
@@ -387,7 +424,7 @@ def render_page() -> None:
                 df_view.sort_values("datetime_dt", ascending=False)[avail_cols]
                 .head(15)
                 .rename(columns={
-                    "pond_id": "Pond ID",
+                    "pond_id": f"{container_label} ID",
                     "region": "Region",
                     "datetime": "Date",
                     "dissolved_oxygen_mg_l": "DO (mg/L)",

@@ -18,7 +18,12 @@ from app.dashboard.components.banners import render_decision_support_banner
 from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.metric_card import render_metric_card
 from app.dashboard.components.registry_status import render_registry_status_bar
-from app.dashboard.utils.helpers import get_registry_health_summary
+from app.dashboard.utils.helpers import (
+    get_registry_health_summary,
+    get_active_farm_type,
+    get_farm_type_disclaimer,
+    FREE_PLATFORM_NOTICE,
+)
 from app.dashboard.utils.styles import inject_custom_css
 from app.models.registry import get_model_registry
 
@@ -68,6 +73,12 @@ def render_page() -> None:
     )
 
     render_decision_support_banner()
+
+    farm_type = get_active_farm_type()
+    st.info(
+        f"**Active Environment: {farm_type}** — {get_farm_type_disclaimer(farm_type)} "
+        f"All models remain read-only artifacts with zero runtime retraining."
+    )
 
     registry = get_model_registry()
     health = get_registry_health_summary(registry)

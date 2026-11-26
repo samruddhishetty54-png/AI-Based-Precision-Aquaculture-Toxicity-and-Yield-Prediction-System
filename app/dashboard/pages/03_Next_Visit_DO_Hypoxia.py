@@ -25,6 +25,11 @@ from app.dashboard.utils.helpers import (
     detect_simulation_source,
     format_percentage,
     validate_defensive_bounds,
+    get_active_farm_type,
+    get_container_label,
+    get_container_id_label,
+    get_farm_type_disclaimer,
+    log_prediction_event,
 )
 from app.dashboard.utils.styles import PALETTE, inject_custom_css
 from app.models.do_hypoxia import (
@@ -278,15 +283,37 @@ def render_page() -> None:
         st.error(f"Error during DO & Hypoxia evaluation: {exc}")
         return
 
+    farm_type = get_active_farm_type()
+    container_label = get_container_label(farm_type)
+    container_id_label = get_container_id_label(farm_type)
+
     # ── Analysis Results ──────────────────────────────────────────────
     st.markdown("---")
-    st.subheader("DO Benchmark & Hypoxia Screening Results")
+    st.subheader(f"DO Benchmark & Hypoxia Screening Results ({farm_type})")
+    st.info(f"**Operational Scope ({farm_type}):** {get_farm_type_disclaimer(farm_type)}")
     if is_simulated:
         st.caption(f"Mode: `{status_tag}` (operational_use_permitted = `{operational_permitted}`).")
 
     hyp_screening = res.get("exploratory_hypoxia_screening", {})
     hyp_score = hyp_screening.get("hypoxia_risk_score")
     is_flagged = hyp_screening.get("screening_flag")
+
+    # Log to session prediction history
+    summary_txt = f"DO Benchmark: {HISTORICAL_TRAIN_MEAN_DISPLAY:.2f} mg/L | Hypoxia Score: {format_percentage(hyp_score)} ({'FLAGGED' if is_flagged else 'UNFLAGGED'})"
+    log_prediction_event(
+        analysis_type="DO & Hypoxia Screening",
+        container_id=str(selected_pond),
+        data_source="Manual Field Entry" if selected_pond == "Manual Entry" else "Historical Dataset",
+        is_simulated=is_simulated,
+        results_summary=summary_txt,
+        details={
+            "next_visit_do_benchmark": HISTORICAL_TRAIN_MEAN_DISPLAY,
+            "hypoxia_screening_score": hyp_score,
+            "screening_flag": is_flagged,
+            "current_morning_do": do_val,
+        },
+        farm_type=farm_type,
+    )
 
     rc1, rc2, rc3, rc4 = st.columns(4)
     with rc1:

@@ -23,6 +23,11 @@ from app.dashboard.utils.helpers import (
     format_percentage,
     validate_defensive_bounds,
     detect_simulation_source,
+    get_active_farm_type,
+    get_container_label,
+    get_container_id_label,
+    get_farm_type_disclaimer,
+    log_prediction_event,
 )
 from app.dashboard.components.header import (
     get_asset_base64,
@@ -190,6 +195,31 @@ def render_page() -> None:
         exp3_score = float("nan")
         exp3_horizon = revisit_days
 
+    farm_type = get_active_farm_type()
+    container_label = get_container_label(farm_type)
+    container_id_label = get_container_id_label(farm_type)
+
+    # Log to session prediction history
+    summary_txt = (
+        f"Soft-Sensor NH3: {exp1_nh3:.4f} mg/L | Mortality: {format_percentage(exp2_score)} | "
+        f"Next-Visit NH3 Risk: {format_percentage(exp3_score)} ({exp3_horizon}d)"
+        if pd.notna(exp1_nh3) else f"Emerson NH3: {nh3_calc:.4f} mg/L ({nh3_tier})"
+    )
+    log_prediction_event(
+        analysis_type="Water Quality & Toxicity Risk",
+        container_id=str(selected_pond),
+        data_source="Manual Entry" if is_manual_entry else "Historical Dataset",
+        is_simulated=is_simulated,
+        results_summary=summary_txt,
+        details={
+            "emerson_nh3_mg_l": nh3_calc,
+            "toxicity_tier": nh3_tier,
+            "mortality_score": exp2_score,
+            "next_visit_nh3_risk": exp3_score,
+        },
+        farm_type=farm_type,
+    )
+
     # ── 1. Three Equally Sized Prediction KPI Cards ──────────────────────
     exp_c1, exp_c2, exp_c3 = st.columns(3)
     with exp_c1:
@@ -226,6 +256,7 @@ def render_page() -> None:
             "Screening scores are exploratory decision-support indicators only; "
             "the ammonia soft-sensor underpredicts elevated NH3 and the mortality diagnostic carries a high false-alarm rate."
         )
+        st.info(f"**Operational Environment Context ({farm_type}):** {get_farm_type_disclaimer(farm_type)}")
         chem_c1, chem_c2, chem_c3, chem_c4 = st.columns(4)
         with chem_c1:
             render_metric_card("Equilibrium pKa", f"{pka:.3f}" if pd.notna(pka) else "N/A", f"At {temp_val:.1f} °C", "Emerson et al. (1975)", icon="⚗️", accent="aqua")
@@ -325,17 +356,17 @@ def render_page() -> None:
     with rc2:
         with st.container(border=True):
             st.markdown(
-                '<div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">'
-                '<span style="font-size:1.15rem;">💡</span>'
-                '<span style="font-size:1.02rem; font-weight:800; color:#173747;">Select a Historical Pond</span>'
-                '</div>'
-                '<div style="font-size:0.83rem; color:#526873; margin-bottom:0.55rem;">'
-                'Choose a pond to inspect its recorded NH3 concentration trajectory and pre-fill parameters.'
-                '</div>',
+                f'<div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.2rem;">'
+                f'<span style="font-size:1.15rem;">💡</span>'
+                f'<span style="font-size:1.02rem; font-weight:800; color:#173747;">Select a Historical {container_label}</span>'
+                f'</div>'
+                f'<div style="font-size:0.83rem; color:#526873; margin-bottom:0.55rem;">'
+                f'Choose a {container_label.lower()} to inspect its recorded NH3 concentration trajectory and pre-fill parameters.'
+                f'</div>',
                 unsafe_allow_html=True,
             )
             chosen_pond = st.selectbox(
-                "Pre-fill from Historical Pond Record (Optional):",
+                f"Pre-fill from Historical {container_label} Record (Optional):",
                 options=pond_opts,
                 index=pond_opts.index(selected_pond) if selected_pond in pond_opts else 0,
                 key="wq_pond_prefill",

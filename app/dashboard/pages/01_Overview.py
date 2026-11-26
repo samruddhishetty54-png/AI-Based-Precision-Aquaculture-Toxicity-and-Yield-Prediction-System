@@ -21,6 +21,10 @@ from app.dashboard.utils.helpers import (
     format_float,
     format_percentage,
     get_registry_health_summary,
+    get_active_farm_type,
+    get_container_label,
+    get_container_id_label,
+    get_farm_type_disclaimer,
 )
 from app.dashboard.components.header import render_page_header, render_section_bar
 from app.dashboard.components.banners import (
@@ -53,16 +57,23 @@ def render_page() -> None:
     inject_custom_css()
 
     # ── Header & Banners ──────────────────────────────────────────────
+    farm_type = get_active_farm_type()
+    container_label = get_container_label(farm_type)
+    container_id_label = get_container_id_label(farm_type)
+
     render_page_header(
-        title="Pond Monitoring Overview & Model Status",
-        subtitle="Multi-pond inspection priority queue and model readiness summary.",
+        title=f"{container_label} Monitoring Overview & Model Status",
+        subtitle=f"Multi-{container_label.lower()} inspection priority queue and model readiness summary ({farm_type}).",
         category_key="HISTORICAL",
     )
+
+    farm_disclaimer = get_farm_type_disclaimer(farm_type)
+    st.caption(f"**Operational Scope ({farm_type}):** {farm_disclaimer}")
 
     render_uploaded_context_notice(["do_mg_l", "ph", "temp_c", "emerson_nh3_mg_l"])
 
     # ── KPI Metric Cards ─────────────────────────────────────────────
-    st.markdown("#### Farm Field Monitoring Summary")
+    st.markdown(f"#### Farm Field Monitoring Summary ({farm_type})")
 
     try:
         df_enrolled = load_dataset("enrolled_ponds")
@@ -87,8 +98,8 @@ def render_page() -> None:
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
     with kpi1:
         render_metric_card(
-            title="Enrolled Commercial Ponds",
-            value=f"{enrolled_count} Ponds",
+            title=f"Enrolled Commercial {container_label}s",
+            value=f"{enrolled_count} {container_label}s",
             subtitle="Registered farm profiles",
             benchmark_ref="enrolled_ponds_v2.csv",
             icon="🐟",

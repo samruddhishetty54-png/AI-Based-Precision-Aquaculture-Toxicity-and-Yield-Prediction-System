@@ -25,11 +25,14 @@ from app.dashboard.utils.helpers import DEFENSIVE_BOUNDS, detect_simulation_sour
 # Canonical fields supported by Precision AquaDSS
 CANONICAL_FIELDS: Dict[str, Dict[str, Any]] = {
     "pond_id": {
-        "label": "Pond Identifier",
+        "label": "Pond / Tank Identifier",
         "unit": "text/id",
         "type": "identifier",
-        "exact_aliases": ["pond_id", "Pond ID", "pondid", "pond_code"],
-        "ambiguous_aliases": ["pond", "id"],
+        "exact_aliases": [
+            "pond_id", "Pond ID", "pondid", "pond_code",
+            "tank_id", "Tank ID", "tankid", "tank_code", "system_id", "System ID",
+        ],
+        "ambiguous_aliases": ["pond", "tank", "id"],
     },
     "farm_id": {
         "label": "Farm / Site Identifier (Optional)",
